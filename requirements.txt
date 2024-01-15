@@ -1,0 +1,4 @@
+Flask==2.2.5             # flask 2.3+ no compatible with flask-mongoengine
+mongoengine==0.27.0
+flask-cors==4.0.0
+flask-mongoengine==1.0.0

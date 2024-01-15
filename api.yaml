@@ -1,0 +1,218 @@
+openapi: "3.0.2"
+info:
+  title: API Title
+  version: "1.0"
+servers:
+  - url: https://api.server.test/v1
+paths:
+  /people:
+    get:
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  people:
+                    type: list
+                    items:
+                      type: object
+                      properties:
+                        personId:
+                          type: string
+                        personDisplayName:
+                          type: string
+
+  /people/{personId}:
+    get:
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  personId:
+                    type: string
+                  personDisplayName:
+                    type: string
+                  createdOn:
+                    type: string
+                    format: date-time
+                  lastModifiedOn:
+                    type: string
+                    format: date-time
+                  birth:
+                    type: object
+                    properties:
+                      date:
+                        type: object
+                        schema:
+                          $ref: '#/components/schemas/AdvancedDate'
+                      place:
+                        type: object
+                        schema:
+                          $ref: '#/components/schemas/Place'
+                  death:
+                    isAlive:
+                      type: string
+                      enum: yes, no, unknown
+                    date:
+                      type: object
+                      schema:
+                        $ref: '#/components/schemas/AdvancedDate'
+                    place:
+                      type: object
+                      schema:
+                        $ref: '#/components/schemas/Place'
+                    cause:
+                      type: string
+                  gender:
+                    type: string
+                    enum: female, male, other
+                  note:
+                    type: string
+                  relations:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        personId:
+                          type: string
+                        personDisplayName:
+                          type: string
+                        otherPersonRole:
+                          type: string
+                          enum: partner, parent, child
+                        relationshipType:
+                          type: string
+                          enum: birth, adoptive, step
+                        note:
+                          type: string
+                  projects:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        projectId:
+                          type: string
+                        projectDisplayName:
+                          type: string
+                        projectNote:
+                          type: object
+                          properties:
+                            note:
+                              type: string
+                            lastModifiedOn:
+                              type: string
+                              format: date-time
+
+
+  /projects:
+    get:
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  projects:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        projectId:
+                          type: string
+                        projectDisplayName:
+                          type: string
+                        projectNote:
+                          description: the top most note in the project
+                          type: string
+                        createdOn:
+                          type: string
+                          format: date-time
+                        lastModifiedOn:
+                          type: string
+                          format: date-time
+
+  /project/{projectId}/notes:
+    get:
+      parameters:
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  projectDisplayName:
+                    type: string
+                  notes:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        noteId:
+                          type: string
+                        createdOn:
+                          type: string
+                          format: date-time
+                        lastModifiedOn:
+                          type: string
+                          format: date-time
+                        content:
+                          type: string
+                          format: markdown
+                        people:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              personId:
+                                type: string
+                              personDisplayName:
+                                type: string
+
+
+
+components:
+  schemas:
+    AdvancedDate:
+      type: object
+      properties:
+        year:
+          type: int
+        month:
+          type: int
+        day:
+          type: int
+        qualifier:
+          type: string
+          enum: exact, about, before, after
+          default: exact
+        note:
+          type: string
+
+    Place:
+      type: object
+      properties:
+        displayName:
+          type: string
+        note:
+          type: string
