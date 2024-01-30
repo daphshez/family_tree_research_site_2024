@@ -89,7 +89,7 @@ paths:
                           enum: partner, parent, child
                         relationshipType:
                           type: string
-                          enum: birth, adoptive, step
+                          enum: birth, adoptive, step, married, divorced
                         note:
                           type: string
                   projects:
@@ -110,6 +110,50 @@ paths:
                               type: string
                               format: date-time
 
+  /relations:
+    put:
+      description: add a relationship between two people
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                relationshipType:
+                  type: string
+                  enum: birth, adoptive, step, married, divorced
+                person1:
+                  schema:
+                    $ref: '#/components/schemas/PersonInRelation'
+                person2:
+                  schema:
+                    $ref: '#/components/schemas/PersonInRelation'
+                note:
+                  type: string
+
+        responses:
+          204:
+            description: OK
+
+    delete:
+      description: delete any existing relationships between the people specified
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                peopleIds:
+                  type: array
+                  items:
+                    type: string
+                  minLength: 2
+
+        responses:
+          204:
+            description: OK
 
   /projects:
     get:
@@ -216,3 +260,13 @@ components:
           type: string
         note:
           type: string
+
+
+    PersonInRelation:
+      type: object
+      properties:
+        personId:
+          type: string
+        role:
+          type: string
+          enum: partner, parent, child, sibling

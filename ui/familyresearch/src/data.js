@@ -21,7 +21,12 @@ export const PEOPLE_DATA = {
       note: 'todo',
       relations: [
           {
-               personId: 3,
+               personId: '9',
+               personDisplayName: 'Elisabeth Widsor',
+               otherPersonRole: 'parent'
+          },
+          {
+               personId: '3',
                personDisplayName: 'Diana Spencer',
                otherPersonRole: 'partner',
                relationshipType: 'divorced'
@@ -48,6 +53,9 @@ export const PEOPLE_DATA = {
    },
    '8': {
         'personId': '8', 'personDisplayName': 'Charlotte Widsor'
+   },
+   '9': {
+      'personId': '9', 'personDisplayName': 'Elisabeth Widsor'
    }
 };
 

@@ -1,50 +1,96 @@
-
-import { useSelector, useDispatch } from 'react-redux';
-import { peopleActions } from '../store/people-slice';
-import { updatePerson } from '../backend';
+import { useSelector } from 'react-redux';
+import PersonDetail from './PersonDetail';
+import PersonMultiselectDetail from './PersonMultiselectDetail';
+import PersonBooleanDetail from './PersonBooleanDetail';
+import { formatAdvancedDate, parseAdvancedDate } from '../advanced-dates';
+import RelatedPeople from './RelatedPeople';
 
 
 export default function PersonDetails() {
-    const dispatch = useDispatch();
 
     const person = useSelector((state) => state.people.selectedPerson);
-    const editingField = useSelector((state) => state.people.editingField);
 
-    function handleEdit(fieldName, fieldValue) {
-        dispatch(peopleActions.editField({fieldName, fieldValue}));
-    }
+    
+    const birthPlace = person.birth && person.birth.place ? person.birth.place.displayName: null;
+    const deathPlace = person.death && person.death.place ? person.death.place.displayName : null;
 
-    function handleCancelEdit() {
-        dispatch(peopleActions.cancelEditField());
-    }
+    const isAlive = !person.death || typeof person.death.isAlive === 'undefined' ||  person.death.isAlive;
 
-    function handleSaveEdit() {
-        const fieldName = editingField.name;
-        const fieldValue = editingField.value;
-        console.log(fieldName);
-        updatePerson(person.personId, {[fieldName]: fieldValue});
-        dispatch(peopleActions.saveFieldEdits());
-    }
+    return (
+        <>
+        <PersonDetail detailId="personDisplayName" 
+                      title="Full Name"
+                      defaultFieldValue={person.personDisplayName} 
+                      updateMaker={(value) => ({personDisplayName: value})}
+                      validate={(value) => (value.length < 2 ? "Please enter at least two charachters": null)}/> 
+
+        <PersonDetail detailId="dateOfBith" 
+                      title="Date of Birth"
+                      defaultFieldValue={person.birth && formatAdvancedDate(person.birth.date)}
+                      updateMaker={(value) => ({
+                        'birth': {
+                            'date': parseAdvancedDate(value)
+                        }
+                    })}
+                        validate={(value) => (parseAdvancedDate(value) || value.trim().length == 0 ? null : "Invalid date format.")}
+                     /> 
+        
+        <PersonDetail detailId="placeOfBirth"
+                      title="Birth place"
+                      defaultFieldValue={birthPlace}
+                      updateMaker={(value) => ({
+                        'birth': {'place': {'displayName': value}}
+                      })}
+                      />
+
+        <PersonBooleanDetail detailId="isAlive"
+                             title="Alive"
+                             defaultFieldValue={isAlive}
+                             updateMaker={(value) => ({death: {isAlive: value}})} 
+                             />
+
+        {
+            !isAlive && 
+
+            <PersonDetail detailId="dateOfDeath" 
+                        title="Date of Death"
+                        defaultFieldValue={person.death && formatAdvancedDate(person.death.date)}
+                        updateMaker={(value) => ({
+                            'death': {
+                                'date': parseAdvancedDate(value)
+                            }
+                        })}
+                        validate={(value) => (parseAdvancedDate(value) || value.trim().length == 0 ? null : "Invalid date format.")}
+                        /> 
+
+        }
 
 
+        {
+            !isAlive && 
 
-    if (editingField && editingField.name === 'personDisplayName')
-    {
-        return <div>
-            <input value={editingField.value} onChange={(event) => handleEdit('personDisplayName', event.target.value)}/>
-            <button onClick={() => handleSaveEdit('personDisplayName')}>Done</button>
-            <button onClick={handleCancelEdit}>Cancel</button>
-        </div>;
+            <PersonDetail detailId="placeOfDeath"
+                          title="Death place"
+                          defaultFieldValue={deathPlace}
+            updateMaker={(value) => ({
+              'death': {'place': {'displayName': value}}
+            })}
+            />
 
-    } else 
-        return (
-            <div>
-                <p><span>{person.personDisplayName}</span>
-                <button onClick={() => handleEdit("personDisplayName", person.personDisplayName)}>Edit</button>
-                </p>
-            </div>
-        )
+        }
+        
+        <PersonMultiselectDetail detailId="gender"
+                                 title="Gender"
+                                 defaultFieldValue={person.gender}
+                                 choices={['female', 'male', 'other']}
+                                 updateMaker={(value) => ({gender: value})}/>
 
+
+        <RelatedPeople person={person}/>
+
+
+    </>
+    )
 
 
 };

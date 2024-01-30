@@ -4,6 +4,7 @@ import MenuItem from './components/MenuItem';
 import PeopleSection from './components/PeopleSection';
 import ProjectsSection from './components/ProjectsSection';
 
+
 function App() {
 
   const [selectedTopic, setSelectedTopic] = useState("People");
