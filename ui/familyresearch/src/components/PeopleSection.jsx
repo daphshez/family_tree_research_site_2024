@@ -52,10 +52,6 @@ export default function PeopleSection() {
     )
 
     if (showSelected && selectedPerson) {
-        const born = selectedPerson.birth && selectedPerson.birth.date && selectedPerson.birth.date.year || "?";
-        const isAlive = !selectedPerson.death || typeof selectedPerson.death.isAlive === 'undefined' ||  selectedPerson.death.isAlive;
-        let died = '';
-        if (!isAlive) died = selectedPerson.death && selectedPerson.death.date && selectedPerson.death.date.year || "?";
         content = (
                 <>
                 <div><button onClick={handleBackToList}>↤</button>

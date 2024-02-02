@@ -1,39 +1,36 @@
-import { useState } from 'react'
+import { createBrowserRouter, RouterProvider} from 'react-router-dom';
 
-import MenuItem from './components/MenuItem';
-import PeopleSection from './components/PeopleSection';
-import ProjectsSection from './components/ProjectsSection';
+
+import PeoplePage, { loader as peopleLoader, action as addPersonAction } from './pages/People.jsx';
+import ProjectsPage from './pages/Projects.jsx';
+import RootLayout from './pages/Root.jsx';
+import PersonPage, { loader as personLoader } from './pages/Person.jsx';
+
+const router = createBrowserRouter([
+  {
+    path: '/',
+    element: <RootLayout />,
+    // errorElement: <ErrorPage />,
+    children: [
+      { 
+        index: true, 
+        element: <PeoplePage /> ,
+        loader: peopleLoader,
+        action: addPersonAction
+      },
+      { 
+        path: '/people/:personId', 
+        element: <PersonPage/>,
+        loader: personLoader
+      },
+      { path: 'projects', element: <ProjectsPage /> },
+    ],
+  }
+]);
 
 
 function App() {
-
-  const [selectedTopic, setSelectedTopic] = useState("People");
-
-  function handleMenuSelect(selectedTitle) {
-    setSelectedTopic(selectedTitle);
-  }
-
-  let sectionContent = <PeopleSection/>;
-  if (selectedTopic == 'Projects')
-    sectionContent = <ProjectsSection/>;
-  
-
-  return (
-    <>
-      <header>Family Research</header>
-
-      <main id="main-menu">
-        <menu className="nav nav-pills">
-          <MenuItem title="People" onSelect={() => handleMenuSelect("People")} isSelected={selectedTopic === "People"}/>
-          <MenuItem title="Projects"  onSelect={() => handleMenuSelect("Projects")}  isSelected={selectedTopic === "Projects"}/>
-        </menu>
-
-        <section id="tab-content">
-            {sectionContent}
-        </section>
-      </main>
-    </>
-  )
+  return <RouterProvider router={router} />;
 }
 
 export default App

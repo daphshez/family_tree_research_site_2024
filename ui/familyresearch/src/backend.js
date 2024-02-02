@@ -33,7 +33,8 @@ export function updatePerson(person) {
 
 export function createNewPerson(personDisplayName) {
     const people = getFromStorage();
-    const maxOldId = Math.max(...Object.keys(people).map(parseInt));
+    const ar = Object.keys(people).map((s) => parseInt(s));
+    const maxOldId = Math.max(...ar);
     const newId = (maxOldId + 1).toString();
     people[newId] = {
         personId: newId,

@@ -1,52 +1,70 @@
-import { useSelector } from 'react-redux';
+import { useState, useEffect } from 'react';
 import PersonDetail from './PersonDetail';
 import PersonMultiselectDetail from './PersonMultiselectDetail';
 import PersonBooleanDetail from './PersonBooleanDetail';
 import { formatAdvancedDate, parseAdvancedDate } from '../advanced-dates';
-import RelatedPeople from './RelatedPeople';
+import { mergeDeep } from '../utils'
+import { updatePerson} from "../backend"
 
 
-export default function PersonDetails() {
+export default function PersonDetails({inputPerson}) {
 
-    const person = useSelector((state) => state.people.selectedPerson);
+    const [person, setPersonState] = useState(inputPerson);
 
-    
+    if (inputPerson.personId != person.personId)
+        setPersonState(inputPerson);
+
     const birthPlace = person.birth && person.birth.place ? person.birth.place.displayName: null;
     const deathPlace = person.death && person.death.place ? person.death.place.displayName : null;
 
-    const isAlive = !person.death || typeof person.death.isAlive === 'undefined' ||  person.death.isAlive;
+    const isAlive = person.calc.isAlive;
+
+    function handleUpdate(update) {
+        setPersonState((person) => mergeDeep(person, update));
+    } 
+
+    useEffect(() => {
+        updatePerson(person);
+    }, [person]);
 
     return (
         <>
         <PersonDetail detailId="personDisplayName" 
                       title="Full Name"
                       defaultFieldValue={person.personDisplayName} 
-                      updateMaker={(value) => ({personDisplayName: value})}
+                      makeUpdate={(value) => ({personDisplayName: value})}
+                      applyUpdate={handleUpdate}
                       validate={(value) => (value.length < 2 ? "Please enter at least two charachters": null)}/> 
 
         <PersonDetail detailId="dateOfBith" 
                       title="Date of Birth"
                       defaultFieldValue={person.birth && formatAdvancedDate(person.birth.date)}
-                      updateMaker={(value) => ({
+                      makeUpdate={(value) => ({
                         'birth': {
                             'date': parseAdvancedDate(value)
                         }
                     })}
+                    applyUpdate={handleUpdate}
+
                         validate={(value) => (parseAdvancedDate(value) || value.trim().length == 0 ? null : "Invalid date format.")}
                      /> 
         
         <PersonDetail detailId="placeOfBirth"
                       title="Birth place"
                       defaultFieldValue={birthPlace}
-                      updateMaker={(value) => ({
+                      makeUpdate={(value) => ({
                         'birth': {'place': {'displayName': value}}
                       })}
+                      applyUpdate={handleUpdate}
+
                       />
 
         <PersonBooleanDetail detailId="isAlive"
                              title="Alive"
                              defaultFieldValue={isAlive}
-                             updateMaker={(value) => ({death: {isAlive: value}})} 
+                             makeUpdate={(value) => ({death: {isAlive: value}})} 
+                             applyUpdate={handleUpdate}
+
                              />
 
         {
@@ -55,11 +73,12 @@ export default function PersonDetails() {
             <PersonDetail detailId="dateOfDeath" 
                         title="Date of Death"
                         defaultFieldValue={person.death && formatAdvancedDate(person.death.date)}
-                        updateMaker={(value) => ({
+                        makeUpdate={(value) => ({
                             'death': {
                                 'date': parseAdvancedDate(value)
                             }
                         })}
+                        applyUpdate={handleUpdate}
                         validate={(value) => (parseAdvancedDate(value) || value.trim().length == 0 ? null : "Invalid date format.")}
                         /> 
 
@@ -72,9 +91,11 @@ export default function PersonDetails() {
             <PersonDetail detailId="placeOfDeath"
                           title="Death place"
                           defaultFieldValue={deathPlace}
-            updateMaker={(value) => ({
+                          makeUpdate={(value) => ({
               'death': {'place': {'displayName': value}}
             })}
+            applyUpdate={handleUpdate}
+
             />
 
         }
@@ -83,10 +104,10 @@ export default function PersonDetails() {
                                  title="Gender"
                                  defaultFieldValue={person.gender}
                                  choices={['female', 'male', 'other']}
-                                 updateMaker={(value) => ({gender: value})}/>
+                                 applyUpdate={handleUpdate}
+                                 makeUpdate={(value) => ({gender: value})}/>
 
 
-        <RelatedPeople person={person}/>
 
 
     </>

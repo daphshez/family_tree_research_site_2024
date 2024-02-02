@@ -1,46 +1,17 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { listPeople, getPerson } from '../backend';
+import { mergeDeep } from '../utils'
 
 
-function isObject(item) {
-  return (item && typeof item === 'object' && !Array.isArray(item));
-}
-
-
-function mergeDeep(target, source) {
-  for (const key in source) {
-    if (isObject(source[key])) {
-      if (!target[key]) target[key] = {};
-      mergeDeep(target[key], source[key]);
-    } else {
-      target[key] = source[key];
-    }
-  }
-
-  return target;
-}
 
 
 const peopleSlice = createSlice({
     name: 'people',
     initialState: {
-        people: listPeople(),   // todo: this can't really happen here 
-        selectedPerson: null,
         showSelected: false,
         editingField: null,
-
         personToSend: null,
     },
     reducers: {
-      select(state, action) {
-        state.showSelected = true;
-        state.selectedPerson = getPerson(action.payload.personId);
-      },
-      
-      hideSelected(state) {
-        state.showSelected = false;
-      },
-
       newPerson(state, action){
           state.selectedPerson = action.payload.newPerson;
           state.showSelected = true;
