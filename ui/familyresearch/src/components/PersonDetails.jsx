@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import PersonDetail from './PersonDetail';
-import PersonMultiselectDetail from './PersonMultiselectDetail';
 import PersonBooleanDetail from './PersonBooleanDetail';
+import PersonMultiselectDetail from './PersonMultiselectDetail';
 import { formatAdvancedDate, parseAdvancedDate } from '../advanced-dates';
 import { mergeDeep } from '../utils'
-import { updatePerson} from "../backend"
+import { updatePerson, isAlive} from "../backend"
 
 
 export default function PersonDetails({inputPerson}) {
@@ -17,7 +17,8 @@ export default function PersonDetails({inputPerson}) {
     const birthPlace = person.birth && person.birth.place ? person.birth.place.displayName: null;
     const deathPlace = person.death && person.death.place ? person.death.place.displayName : null;
 
-    const isAlive = person.calc.isAlive;
+    const isPersonAlive = isAlive(person);
+
 
     function handleUpdate(update) {
         setPersonState((person) => mergeDeep(person, update));
@@ -61,14 +62,14 @@ export default function PersonDetails({inputPerson}) {
 
         <PersonBooleanDetail detailId="isAlive"
                              title="Alive"
-                             defaultFieldValue={isAlive}
+                             defaultFieldValue={isPersonAlive}
                              makeUpdate={(value) => ({death: {isAlive: value}})} 
                              applyUpdate={handleUpdate}
 
                              />
 
         {
-            !isAlive && 
+            !isPersonAlive && 
 
             <PersonDetail detailId="dateOfDeath" 
                         title="Date of Death"

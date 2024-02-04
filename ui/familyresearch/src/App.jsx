@@ -16,7 +16,8 @@ const router = createBrowserRouter([
         index: true, 
         element: <PeoplePage /> ,
         loader: peopleLoader,
-        action: addPersonAction
+        action: addPersonAction,
+        id: 'people'
       },
       { 
         path: '/people/:personId', 

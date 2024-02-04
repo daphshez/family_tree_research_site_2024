@@ -1,7 +1,21 @@
 
 import { PEOPLE_DATA } from "./data"
 
-// todo, switch to using localStore
+export function isAlive(person) {
+    return !person.death || typeof person.death.isAlive === 'undefined' ||  person.death.isAlive;
+}
+
+function birthYear(person) { 
+    return person.birth && person.birth.date && person.birth.date.year || "?";
+}
+
+function deathYear(person) {
+    return isAlive(person) ? '' : person.death && person.death.date && person.death.date.year || "?"
+}
+
+export function fullDisplayName(person) {
+    return  `${person.personDisplayName} (${birthYear(person)} - ${deathYear(person)})`
+}
 
 function getFromStorage() {
     let people = localStorage.getItem('people');
@@ -16,7 +30,7 @@ function getFromStorage() {
 export function listPeople() {
     const people = getFromStorage();
     return Object.values(people).map(person => ({
-        personId: person.personId, personDisplayName: person.personDisplayName
+        personId: person.personId, personDisplayName: person.personDisplayName, birth: person.birth, death: person.death
     }));
 }
 
@@ -44,7 +58,15 @@ export function createNewPerson(personDisplayName) {
     return newId;
 }
 
-export function addRelationship(personId1, personId2, role1, role2, relationshipType, note) {
+export const roles = {
+    partner: {value: 'partner', title: 'Partner', options: ['married', 'unmarried', 'divorced'], reverse: 'partner'},
+    parent: {value: 'parent', title: 'Parent', options: ['biological', 'adoptive', 'step'], 'reverse': 'child'},
+    child: {value: 'child', title: 'Child', options: ['biological', 'adoptive', 'step'], 'reverse': 'parent'},
+    sibling: {value: 'sibling', title: 'Sibling', options: ['biological', 'adoptive', 'step', 'half'], 'reverse': 'sibling'},
+};
+
+
+export function addRelationship(personId1, personId2, role2, relationshipOption) {
     const people = getFromStorage();
     const person1 = people[personId1];
     const person2 = people[personId2];
@@ -59,8 +81,7 @@ export function addRelationship(personId1, personId2, role1, role2, relationship
         personId: person2.personId,
         personDisplayName: person2.personDisplayName,
         otherPersonRole: role2,
-        relationshipType: relationshipType,
-        note
+        relationshipOption,
     }];
 
     if (!person2.relations)
@@ -69,9 +90,8 @@ export function addRelationship(personId1, personId2, role1, role2, relationship
     person2.relations = [...person2.relations, {
         personId: person1.personId,
         personDisplayName: person1.personDisplayName,
-        otherPersonRole: role1,
-        relationshipType: relationshipType,
-        note}];
+        otherPersonRole: roles[role2].reverse,
+        relationshipOption}];
 
     localStorage.setItem('people', JSON.stringify(people));
 }
@@ -87,3 +107,4 @@ export function deleteRelationships(people) {
 
     localStorage.setItem('people', JSON.stringify(allPeople));
 }
+

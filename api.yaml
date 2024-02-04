@@ -24,6 +24,31 @@ paths:
                           type: string
                         personDisplayName:
                           type: string
+                        birth:
+                          type: object
+                          properties:
+                            date:
+                              type: object
+                              schema:
+                                $ref: '#/components/schemas/AdvancedDate'
+                            place:
+                              type: object
+                              schema:
+                                $ref: '#/components/schemas/Place'
+                        death:
+                          isAlive:
+                            type: string
+                            enum: yes, no, unknown
+                          date:
+                            type: object
+                            schema:
+                              $ref: '#/components/schemas/AdvancedDate'
+                          place:
+                            type: object
+                            schema:
+                              $ref: '#/components/schemas/Place'
+                          cause:
+                            type: string
 
   /people/{personId}:
     get:
@@ -34,6 +59,7 @@ paths:
             application/json:
               schema:
                 type: object
+                required: [personId, personDisplayName]
                 properties:
                   personId:
                     type: string

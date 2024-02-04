@@ -22,14 +22,14 @@ export const PEOPLE_DATA = {
       relations: [
           {
                personId: '9',
-               personDisplayName: 'Elisabeth Widsor',
+               personDisplayName: 'Elisabeth Windsor',
                otherPersonRole: 'parent'
           },
           {
                personId: '3',
                personDisplayName: 'Diana Spencer',
                otherPersonRole: 'partner',
-               relationshipType: 'divorced'
+               relationshipOption: 'divorced'
           }
       ]
    },
