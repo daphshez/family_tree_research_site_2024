@@ -20,10 +20,18 @@ export default function AddRelationForm({personId, currentRelations, applyUpdate
         // todo, validation 
         event.preventDefault();
         const fd = new FormData(event.target);
-        addRelationship(personId,
-            fd.get("otherPersonId"),
-            fd.get("otherPersonRole"),
-            fd.get("roleOptions") || null);
+        const otherPersonId = fd.get("otherPersonId");
+        const otherPersonName = peopleToInclude.filter((person) => person.personId === otherPersonId)[0].personDisplayName;
+
+        const relationship = {
+            personId,
+            otherPersonId,
+            otherPersonName,
+            otherPersonRole: fd.get("otherPersonRole"),
+            relationshipOption: fd.get("roleOptions") || null
+        }
+        addRelationship(relationship);  // backend update 
+        applyUpdate(relationship);      // parent component update 
         event.target.reset();
     }
 

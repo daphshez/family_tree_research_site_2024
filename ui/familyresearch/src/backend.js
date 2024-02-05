@@ -65,11 +65,10 @@ export const roles = {
     sibling: {value: 'sibling', title: 'Sibling', options: ['biological', 'adoptive', 'step', 'half'], 'reverse': 'sibling'},
 };
 
-
-export function addRelationship(personId1, personId2, role2, relationshipOption) {
+export function addRelationship({personId, otherPersonId, otherPersonRole, relationshipOption}) {
     const people = getFromStorage();
-    const person1 = people[personId1];
-    const person2 = people[personId2];
+    const person1 = people[personId];
+    const person2 = people[otherPersonId];
 
     // todo, error handling - objects don't exist, relationship already exists
     //   relationship type doesn't match role 
@@ -80,7 +79,7 @@ export function addRelationship(personId1, personId2, role2, relationshipOption)
     person1.relations = [...person1.relations, {
         personId: person2.personId,
         personDisplayName: person2.personDisplayName,
-        otherPersonRole: role2,
+        otherPersonRole: otherPersonRole,
         relationshipOption,
     }];
 
@@ -90,7 +89,7 @@ export function addRelationship(personId1, personId2, role2, relationshipOption)
     person2.relations = [...person2.relations, {
         personId: person1.personId,
         personDisplayName: person1.personDisplayName,
-        otherPersonRole: roles[role2].reverse,
+        otherPersonRole: roles[otherPersonRole].reverse,
         relationshipOption}];
 
     localStorage.setItem('people', JSON.stringify(people));

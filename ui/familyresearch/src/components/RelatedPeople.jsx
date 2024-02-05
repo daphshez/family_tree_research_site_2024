@@ -16,8 +16,14 @@ export default function RelatedPeople({ person }) {
         setRelationToRemove(removePersonId);
     }
 
-    function addRelation(otherPersonId, otherPersonRole, relationshipOption) {
-        console.log("todo");
+
+    function addRelation({otherPersonId, otherPersonName, otherPersonRole, relationshipOption}) {
+        setRelations((relations) => [...relations, {
+            personId: otherPersonId,
+            personDisplayName: otherPersonName,
+            otherPersonRole,
+            relationshipOption
+       }])
     }
 
     if (person.personId != personId) {
