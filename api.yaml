@@ -200,9 +200,6 @@ paths:
                           type: string
                         projectDisplayName:
                           type: string
-                        projectNote:
-                          description: the top most note in the project
-                          type: string
                         createdOn:
                           type: string
                           format: date-time

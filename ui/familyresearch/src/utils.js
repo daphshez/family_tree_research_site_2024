@@ -24,5 +24,13 @@ function isObject(item) {
   }
 
 
+  export function nicerDate(isoString) {
+    return new Intl.DateTimeFormat('en-GB', {
+      dateStyle: 'short',
+      timeStyle: 'short',
+      timeZone: 'Europe/London',
+    }).format(Date.parse(isoString));
+  }
+
 
   

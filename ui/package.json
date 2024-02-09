@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "chrono-node": "^2.7.5"
+    "chrono-node": "^2.7.5",
+    "react-markdown": "^9.0.1"
   }
 }

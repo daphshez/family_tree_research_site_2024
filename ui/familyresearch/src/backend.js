@@ -1,5 +1,7 @@
 
-import { PEOPLE_DATA } from "./data"
+import { PEOPLE_DATA, PROJECTS_DATA } from "./data"
+
+import { nicerDate } from "./utils";
 
 export function isAlive(person) {
     return !person.death || typeof person.death.isAlive === 'undefined' ||  person.death.isAlive;
@@ -107,3 +109,83 @@ export function deleteRelationships(people) {
     localStorage.setItem('people', JSON.stringify(allPeople));
 }
 
+
+
+
+
+
+function getProjectsFromStorage() {
+    let projects = localStorage.getItem('projects');
+    if (!projects)
+    {
+        projects = JSON.stringify(PROJECTS_DATA);
+        localStorage.setItem('projects', projects);
+    }
+    return JSON.parse(projects);
+}
+
+
+export function listProjects() {
+    return Object.values(getProjectsFromStorage());
+}
+
+export function createNewProject(name) {
+    const projects = getProjectsFromStorage();
+    const ar = Object.keys(projects).map((s) => parseInt(s));
+    const maxOldId = Math.max(...ar);
+    const newId = (maxOldId + 1).toString();
+    projects[newId] = {
+        projectId: newId,
+        projectDisplayName: name
+    }
+    localStorage.setItem('projects', JSON.stringify(projects));
+    return newId;    
+}
+
+export function getProjectNotes(projectId) {
+    const projects = getProjectsFromStorage();    
+    const notes = projects[projectId].notes ? Object.values(projects[projectId].notes) : [];
+    return notes.map((note) => {
+        const copied = {...note};
+        copied.created = nicerDate(note.created);
+        copied.lastUpdate = nicerDate(note.lastUpdate);
+        return copied;
+    });
+}
+
+export function getNote(projectId, noteId) {
+    const projects = getProjectsFromStorage();
+    const note = {...projects[projectId].notes[noteId]};
+    note.created = nicerDate(note.created);
+    note.lastUpdate = nicerDate(note.lastUpdate);
+    return note;
+}
+
+export function updateNote(projectId, noteId, content) {
+    const projects = getProjectsFromStorage();   
+    const note = projects[projectId].notes[noteId];
+    note.content = content;
+    note.lastUpdate = (new Date()).toISOString();
+    localStorage.setItem('projects', JSON.stringify(projects));
+}
+
+export function createNewNote(projectId, content) {
+    const projects = getProjectsFromStorage();
+    const project = projects[projectId];
+    let noteId = "1";
+    if (project.notes) {
+        const ar = Object.keys(project.notes).map((s) => parseInt(s));
+        const maxOldId = Math.max(...ar);
+        noteId = (maxOldId + 1).toString();
+    } else {
+        project.notes = {};
+    }
+    const created = (new Date()).toISOString();;
+    project.notes[noteId] = {
+        noteId,
+        content,
+        created,
+        lastUpdate: created
+   };
+   localStorage.setItem('projects', JSON.stringify(projects));
+}

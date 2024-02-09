@@ -59,3 +59,24 @@ export const PEOPLE_DATA = {
    }
 };
 
+
+export const PROJECTS_DATA = {
+     "1": {
+          projectId: "1",
+          projectDisplayName: 'Yomtov Kahan Descendents',
+          notes: {
+               "1": 
+               {
+                    noteId: "1",
+                    content: "**This is the note**",
+                    created: "2024-01-01T00:00:00Z",
+                    lastUpdate: "2024-01-01T00:00:00Z"
+               }
+          }
+     },
+     "2": {
+          projectId: 2,
+          projectDisplayName: 'Shatz'
+     }
+}
+
