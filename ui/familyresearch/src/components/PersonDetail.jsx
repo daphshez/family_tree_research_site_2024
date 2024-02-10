@@ -49,7 +49,7 @@ export default function PersonDetail({detailId,
         return (<div>
             <span>{title}: </span>
             <span>{defaultFieldValue}</span> 
-            <button onClick={() => handleEdit(defaultFieldValue)}>Edit</button>  
+            <button onClick={() => handleEdit(defaultFieldValue || "")}>Edit</button>  
             </div>
         );
     }

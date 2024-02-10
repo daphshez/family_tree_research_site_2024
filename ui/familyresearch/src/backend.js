@@ -29,6 +29,18 @@ function getFromStorage() {
     return JSON.parse(people);
 }
 
+function getProjectsFromStorage() {
+    let projects = localStorage.getItem('projects');
+    if (!projects)
+    {
+        projects = JSON.stringify(PROJECTS_DATA);
+        localStorage.setItem('projects', projects);
+    }
+    return JSON.parse(projects);
+}
+
+
+
 export function listPeople() {
     const people = getFromStorage();
     return Object.values(people).map(person => ({
@@ -38,7 +50,25 @@ export function listPeople() {
 
 export function getPerson(personId) {
     const people = getFromStorage();
-    return people[personId];
+    const person = people[personId]
+    const projects = Object.values(getProjectsFromStorage());
+
+    person.projects = projects.map((p) => {
+        const projectNotes = p.notes ? Object.values(p.notes) : [];
+
+        const filteredNotes = projectNotes.filter((note) => note.content.includes(`(/people/${personId})`));
+                           
+        if (filteredNotes) {
+            return {
+                projectId: p.projectId,
+                projectDisplayName: p.projectDisplayName,
+                notes: filteredNotes
+            }
+        } 
+    }).filter(p => p.notes.length);
+
+
+    return person;
 }
 
 export function updatePerson(person) {
@@ -114,15 +144,7 @@ export function deleteRelationships(people) {
 
 
 
-function getProjectsFromStorage() {
-    let projects = localStorage.getItem('projects');
-    if (!projects)
-    {
-        projects = JSON.stringify(PROJECTS_DATA);
-        localStorage.setItem('projects', projects);
-    }
-    return JSON.parse(projects);
-}
+
 
 
 export function listProjects() {
@@ -188,4 +210,16 @@ export function createNewNote(projectId, content) {
         lastUpdate: created
    };
    localStorage.setItem('projects', JSON.stringify(projects));
+}
+
+export function searchPeople(searchBy, maxResults) {
+    const people = getFromStorage();
+
+    const re = new RegExp(searchBy, "i");
+
+
+    return Object.values(people).filter(person => person.personDisplayName.search(re) >= 0).map(person => ({
+        personId: person.personId, personDisplayName: person.personDisplayName, birth: person.birth, death: person.death
+    })).splice(0, maxResults);
+
 }
