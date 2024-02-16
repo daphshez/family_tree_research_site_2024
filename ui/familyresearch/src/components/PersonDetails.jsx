@@ -5,6 +5,7 @@ import PersonMultiselectDetail from './PersonMultiselectDetail';
 import { formatAdvancedDate, parseAdvancedDate } from '../advanced-dates';
 import { mergeDeep } from '../utils'
 import { updatePerson, isAlive} from "../backend"
+import Box from "@mui/material/Box";
 
 
 export default function PersonDetails({inputPerson}) {
@@ -31,10 +32,11 @@ export default function PersonDetails({inputPerson}) {
     return (
         <>
         <PersonDetail detailId="personDisplayName" 
-                      title="Full Name"
+                      title=""
                       defaultFieldValue={person.personDisplayName} 
                       makeUpdate={(value) => ({personDisplayName: value})}
                       applyUpdate={handleUpdate}
+                      textVariant='h5'
                       validate={(value) => (value.length < 2 ? "Please enter at least two charachters": null)}/> 
 
         <PersonDetail detailId="dateOfBith" 

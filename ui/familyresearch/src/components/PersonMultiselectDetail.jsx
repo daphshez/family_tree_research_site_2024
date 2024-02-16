@@ -1,5 +1,14 @@
 import { Fragment, useState } from 'react';
-
+import { Box, Typography, Button} from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
+import DoneIcon from '@mui/icons-material/Done';
+import CancelIcon from '@mui/icons-material/Cancel';
+import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
+import Radio from '@mui/material/Radio';
+import RadioGroup from '@mui/material/RadioGroup';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import FormControl from '@mui/material/FormControl';
+import FormLabel from '@mui/material/FormLabel';
 
 export default function PersonMultiselectDetail({detailId, 
                                       title, 
@@ -11,6 +20,7 @@ export default function PersonMultiselectDetail({detailId,
     const [ fieldValue, setFieldValue ] = useState();  
     const [ isEditing, setIsEditing ] = useState(false);
 
+    const sanitisedDefault = defaultFieldValue || "";
 
     function handleEdit(fieldValue) {
         setFieldValue(fieldValue);
@@ -32,33 +42,39 @@ export default function PersonMultiselectDetail({detailId,
     }  
     
     if (isEditing) {
-        return (<div><form onSubmit={handleSaveEdit}>
-            <span>{title}:</span>
-            {
-                choices.map((choice)=>(
-                    <Fragment key={choice}>
-                    <input type="radio" 
-                           id={detailId + "-" + choice} 
-                           name={detailId} 
-                           value={choice}
-                           checked={fieldValue === choice}
-                           onChange={(e) => handleEdit(e.target.value)}
-                           />
-                    <label htmlFor={choice}>{choice}</label>
-                    </Fragment>
-                ))
-            }
-            <button type="button" onClick={() => handleEdit(null)}>Deselect</button>
-            <button type="submit">Done</button>
-            <button type="button" onClick={handleCancelEdit}>Cancel</button>
-        </form></div>);
+        return (
+            <Box sx={{
+                display: 'flex',
+                marginBottom: '20px'
+            }}>
+                <form onSubmit={handleSaveEdit}>
+                <FormControl>
+                <RadioGroup row name={detailId}  >
+                {
+                    choices.map((choice)=>(
+                        <FormControlLabel key={choice} value={choice} control={<Radio checked={fieldValue === choice}
+                        onChange={(e) => handleEdit(e.target.value)}/>} label={choice}  />
+                    ))
+                }
+                </RadioGroup>
+                </FormControl>
+                <Button variant="text" size="small" type="button" onClick={() => handleEdit(null)}><QuestionMarkIcon/></Button>
+                <Button variant="text" size="small" type="submit"><DoneIcon/></Button>
+                <Button variant="text" size="small" type="button"  onClick={handleCancelEdit}><CancelIcon/></Button>
+        </form>
+        </Box>);
     }
 
-    return  (<div>
-        <span>{title}: </span>
-        <span>{defaultFieldValue}</span> 
-        <button onClick={() => handleEdit(defaultFieldValue)}>Edit</button>  
-        </div>
+    return (
+        <Box sx={{
+            display: 'flex',
+            marginBottom: '20px'
+        }}>
+            <Typography variant="p">{ title ? `${title}: ${sanitisedDefault}` : sanitisedDefault }</Typography>
+            <Button variant="text" size="small" onClick={() => handleEdit(sanitisedDefault)}><EditIcon/></Button>
+        </Box>
+        
     );
+    
 
 }

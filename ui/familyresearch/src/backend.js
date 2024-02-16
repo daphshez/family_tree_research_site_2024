@@ -16,7 +16,8 @@ function deathYear(person) {
 }
 
 export function fullDisplayName(person) {
-    return  `${person.personDisplayName} (${birthYear(person)} - ${deathYear(person)})`
+    return isAlive(person) ? `${person.personDisplayName} (b. ${birthYear(person)})` :
+      `${person.personDisplayName} (${birthYear(person)} - ${deathYear(person)})`;
 }
 
 function getFromStorage() {

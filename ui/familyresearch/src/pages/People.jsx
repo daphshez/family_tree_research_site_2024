@@ -1,22 +1,45 @@
+import { useState } from "react";
 import { listPeople } from "../backend"
 import { Link, redirect } from 'react-router-dom';
 import { useLoaderData } from 'react-router-dom';
 import { createNewPerson, fullDisplayName } from "../backend";
 
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemButton from '@mui/material/ListItemButton';
+import Fab from '@mui/material/Fab'
+import AddIcon from '@mui/icons-material/Add';
+
 import  NewPersonForm  from "../components/NewPersonForm"
+
+const style = {
+        margin: 0,
+        top: 'auto',
+        right: 20,
+        bottom: 20,
+        left: 'auto',
+        position: 'fixed',
+    };
 
 export default function PeoplePage() {
     const people = useLoaderData();
+    const [isNewPersonFormOpen, setNewPersonFormOpen] = useState(false);
 
-    return (<> 
-           <ul className="list-group">
-            {people.map( (person) => (
-                    <li key={person.personId}><Link to={`/people/${person.personId}`}
-                    key={person.personId}>{fullDisplayName(person)}</Link></li>
+    return (
+    <>
+    <List>
+        {people.map( (person) => (
+                <ListItem disablePadding key={person.personId}>
+                        <ListItemButton component={Link} to={`/people/${person.personId}`}>{fullDisplayName(person)}</ListItemButton>
+                </ListItem>
+                   
             ) )}
-            </ul>
-           <NewPersonForm/>
-           </>);
+    </List> 
+    <Fab color="primary" aria-label="add" onClick={() => setNewPersonFormOpen(true)}>
+        <AddIcon />
+      </Fab>
+    <NewPersonForm open={isNewPersonFormOpen} handleClose={() => setNewPersonFormOpen(false)}/> 
+    </>);
 
 }
 

@@ -8,6 +8,11 @@ import PersonPage, { loader as personLoader } from './pages/Person.jsx';
 import ProjectPage, { loader as projectNotesLoader } from './pages/Project.jsx';
 import NotePage, { loader as noteLoader, action as noteAction} from './pages/Note.jsx';
 
+import '@fontsource/roboto/300.css';
+import '@fontsource/roboto/400.css';
+import '@fontsource/roboto/500.css';
+import '@fontsource/roboto/700.css';
+
 const router = createBrowserRouter([
   {
     path: '/',

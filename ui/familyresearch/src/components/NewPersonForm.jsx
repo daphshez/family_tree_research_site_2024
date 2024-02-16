@@ -1,11 +1,33 @@
 import { Form } from 'react-router-dom';
+import { Dialog, DialogTitle, DialogContent,  TextField, DialogActions, Button} from '@mui/material';
 
-export default function NewPersonForm() {
+
+export default function NewPersonForm({open, handleClose}) {
+
     return (
-        <Form method='POST'>
-            <label htmlFor="addPerson">Add a Person</label>
-            <input name="newPersonName" id="newPersonName"/>
-            <button type="submit">Done</button>
-            
-        </Form>);
-}
+        <Dialog
+          open={open}
+          onClose={handleClose}
+        >
+          <Form method='POST'>
+            <DialogTitle>New Person Name</DialogTitle>
+            <DialogContent>
+              <TextField
+                autoFocus
+                required
+                margin="dense"
+                id="newPersonName"
+                name="newPersonName"
+                label="Full Name"
+                fullWidth
+                variant="standard"
+              />
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleClose}>Cancel</Button>
+              <Button type="submit">Add</Button>
+            </DialogActions>
+          </Form>
+        </Dialog>
+    );
+  }

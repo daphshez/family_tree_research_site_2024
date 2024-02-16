@@ -1,14 +1,18 @@
 import { Link } from "react-router-dom"
 import { useState, useEffect, useRef } from "react";
 import { deleteRelationships } from "../backend"
-import AddRelationForm from "./RelatedPeopleAddForm";
-
+import AddRelationForm from "./RelatedPeopleAddForm2";
+import { Typography , Box, List,ListItem, ListItemButton, Button, Select, MenuItem, FormControl } from "@mui/material";
+import RemoveCircleOutlineSharpIcon from '@mui/icons-material/RemoveCircleOutlineSharp';
+import AddIcon from '@mui/icons-material/Add';
 
 
 export default function RelatedPeople({ person }) {
     const [personId, setPersonId] = useState(person.personId);
     const [relations, setRelations] = useState(person.relations || []);
     const [relationToRemove, setRelationToRemove] = useState();
+    const [isAddRelationFormOpen, setAddRelationFormOpen] = useState(false);
+    
 
 
     function removeRelation(removePersonId) {
@@ -39,25 +43,43 @@ export default function RelatedPeople({ person }) {
     }, [relationToRemove])
 
     return (
-        <div>
-        <header>Related people</header>
-        <ul>
-            { relations.map((other) => (
-                <li key={other.personId}>
-                    <Link to={`/people/${other.personId}`}>{other.personDisplayName}</Link> 
-                    ({other.otherPersonRole})
-                    <button type="button" onClick={()=>removeRelation(other.personId)}>Remove</button>
-                    </li>
+        <Box sx={{
+            marginBottom: '20px'
+        }}>
+        <Typography variant="h6">Related people</Typography>
+        <List>
+        {relations.map( (other) => (
+                <ListItem 
+                    disablePadding key={other.personId}
+                    secondaryAction={
+                         <Button color="error" variant="text" size="small" onClick={()=>removeRelation(other.personId)}><RemoveCircleOutlineSharpIcon/></Button>   
+                    }>
+                        <ListItemButton 
+                           component={Link} 
+                           to={`/people/${other.personId}`}>{other.personDisplayName} ({other.otherPersonRole})
+                        </ListItemButton>
+                </ListItem>
+                   
+            ) )}
 
-            ))}
-        </ul>
+        <ListItem disablePadding>
+            <ListItemButton onClick={() => setAddRelationFormOpen(true)}><AddIcon/></ListItemButton>
+        </ListItem>
+        </List> 
 
         <AddRelationForm 
+          personId={person.personId}
+          currentRelations={relations.map((relation) => relation.personId)}
+          open={isAddRelationFormOpen} 
+          applyUpdate={addRelation}
+          handleClose={() => setAddRelationFormOpen(false)}/>
+    
+        {/* <AddRelationForm 
         personId={person.personId}
         currentRelations={relations.map((relation) => relation.personId)}
-        applyUpdate={addRelation}
-        />
+        
+        /> */}
        
-    </div>
+    </Box>
     )
 }

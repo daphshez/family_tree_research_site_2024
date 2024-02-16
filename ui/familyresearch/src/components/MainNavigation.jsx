@@ -1,36 +1,21 @@
-import { NavLink } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
 
-import classes from './MainNavigation.module.css';
+
 
 function MainNavigation() {
+
+  const { pathname } = useLocation();
+
+  const tab = pathname.startsWith('/projects') ? 'projects' : 'people';
+
+
   return (
-    <header className={classes.header}>
-      <nav>
-        <ul className={classes.list}>
-          <li>
-            <NavLink
-              to="/"
-              className={({ isActive }) =>
-                isActive ? classes.active : undefined
-              }
-              end
-            >
-              People
-            </NavLink>
-          </li>
-          <li>
-            <NavLink
-              to="/projects"
-              className={({ isActive }) =>
-                isActive ? classes.active : undefined
-              }
-            >
-              Projects
-            </NavLink>
-          </li>
-        </ul>
-      </nav>
-    </header>
+      <Tabs value={tab}>
+        <Tab label="People" value="people" to="/" component={Link} />
+        <Tab label="Projects" value="projects" to="/projects" component={Link} />
+      </Tabs>
   );
 }
 

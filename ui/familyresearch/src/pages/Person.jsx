@@ -3,6 +3,7 @@ import { getPerson, fullDisplayName } from '../backend';
 import PersonDetails from '../components/PersonDetails';
 import RelatedPeople from '../components/RelatedPeople';
 import PersonProjects from '../components/PersonProjects';
+import { Typography, Box } from '@mui/material';
 
 
 export default function PersonPage() {
@@ -10,13 +11,15 @@ export default function PersonPage() {
 
 
     return (      
-        <>
-        <header>{fullDisplayName(person)}</header>
+        <Box sx={{
+            display: 'flex',
+            flexDirection: 'column'
+        }}>
         <PersonDetails inputPerson={person}/>
         <RelatedPeople person={person}/>
         <PersonProjects person={person}/>
 
-        </>);
+        </Box>);
 }
 
 
