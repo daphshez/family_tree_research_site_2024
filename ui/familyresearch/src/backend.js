@@ -141,15 +141,8 @@ export function deleteRelationships(people) {
 }
 
 
-
-
-
-
-
-
-
 export function listProjects() {
-    return Object.values(getProjectsFromStorage());
+    return Object.values(getProjectsFromStorage()).map((p) => ({...p, nNotes: p.notes ? Object.keys(p.notes).length : 0}));
 }
 
 export function createNewProject(name) {
@@ -165,15 +158,16 @@ export function createNewProject(name) {
     return newId;    
 }
 
-export function getProjectNotes(projectId) {
-    const projects = getProjectsFromStorage();    
-    const notes = projects[projectId].notes ? Object.values(projects[projectId].notes) : [];
-    return notes.map((note) => {
+export function getProject(projectId) {
+    const project = getProjectsFromStorage()[projectId];    
+    const notes = project.notes ? Object.values(project.notes) : [];
+    project.notes = notes.map((note) => {
         const copied = {...note};
         copied.created = nicerDate(note.created);
         copied.lastUpdate = nicerDate(note.lastUpdate);
         return copied;
     });
+    return project;
 }
 
 export function getNote(projectId, noteId) {
@@ -193,7 +187,7 @@ export function updateNote(projectId, noteId, content) {
 }
 
 export function createNewNote(projectId, content) {
-    const projects = getProjectsFromStorage();
+    const projects = getProjectsFromStorage(); 
     const project = projects[projectId];
     let noteId = "1";
     if (project.notes) {

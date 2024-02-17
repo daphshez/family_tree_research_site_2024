@@ -29,7 +29,7 @@ function isObject(item) {
       dateStyle: 'short',
       timeStyle: 'short',
       timeZone: 'Europe/London',
-    }).format(Date.parse(isoString));
+    }).format(Date.parse(isoString)).replace("," , "");
   }
 
 

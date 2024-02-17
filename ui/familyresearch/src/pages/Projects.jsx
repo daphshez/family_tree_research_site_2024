@@ -1,24 +1,65 @@
 import { listProjects, createNewProject } from "../backend";
 import { useLoaderData, Link, Form , redirect} from "react-router-dom";
+import { useState } from "react";
+import { List, ListItem, ListItemButton, Fab} from "@mui/material";
+import AddIcon from '@mui/icons-material/Add';
+import { Dialog, DialogTitle, DialogContent,  TextField, DialogActions, Button, Breadcrumbs, Typography} from '@mui/material';
+
+
+function NewForm({open, handleClose}) {
+
+  return (
+      <Dialog
+        open={open}
+        onClose={handleClose}
+      >
+        <Form method='POST'>
+          <DialogTitle>New Project</DialogTitle>
+          <DialogContent>
+            <TextField
+              autoFocus
+              required
+              margin="dense"
+              id="newProjectName"
+              name="newProjectName"
+              label="Project Name:"
+              fullWidth
+              variant="standard"
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleClose}>Cancel</Button>
+            <Button type="submit">Add</Button>
+          </DialogActions>
+        </Form>
+      </Dialog>
+  );
+}
 
 export default function ProjectsPage() {
   const projects = useLoaderData();
+  const [isNewProjectFormOpen, setNewProjectFormOpen] = useState(false);
 
-  return (<> 
-         <ul className="list-group">
-          {projects.map( (p) => (
-                  <li key={p.projectId}>
-                    <Link to={`/projects/${p.projectId}`}>{p.projectDisplayName}</Link></li>
-          ) )}
-          </ul>
+  return (
+    <>
+        <Breadcrumbs aria-label="breadcrumb">
+      
+        <Typography color="text.primary">Projects</Typography>
+        </Breadcrumbs>
 
-          <Form method='POST'>
-            <label htmlFor="newProjectName">New project name:</label>
-            <input name="newProjectName" id="newProjectName"/>
-            <button type="submit">Add</button>
-        </Form>
-
-         </>);
+    <List>
+        {projects.map( (p) => (
+                <ListItem disablePadding key={p.projectId}>
+                        <ListItemButton component={Link} to={`/projects/${p.projectId}`}>{p.projectDisplayName} ({p.nNotes})</ListItemButton>
+                </ListItem>
+                   
+            ) )}
+    </List> 
+    <Fab color="primary" aria-label="add" onClick={() => setNewProjectFormOpen(true)}>
+        <AddIcon />
+      </Fab>
+      <NewForm open={isNewProjectFormOpen}  handleClose={() => setNewProjectFormOpen(false)}/>
+    </>);
 
   }
 

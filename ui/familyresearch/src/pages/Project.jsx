@@ -1,27 +1,54 @@
-import { getProjectNotes } from "../backend";
-import { useLoaderData, Link , useParams } from "react-router-dom";
-import RouterMarkdown from "../components/RouterMarkdown";
+import { getProject } from "../backend";
+import { useLoaderData, Link  } from "react-router-dom";
+import CustomMarkdown from "../components/CustomMarkdown";
+import { Card , CardContent, Fab, Typography, Box, Button, CardActions, Breadcrumbs } from "@mui/material";
+import AddIcon from '@mui/icons-material/Add';
+
+function NoteCard({note}) {
+    return (
+        <Card sx={{ minWidth: 400, marginBottom: '20px' }}>
+            <CardContent>
+                    <CustomMarkdown gutterBottom>
+                    { note.content }
+                    </CustomMarkdown>
+                
+            </CardContent>
+            <CardActions sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                    <Button component={Link} to={`notes/${note.noteId}`}>Edit</Button>
+                    <Typography variant="body2" color="text.secondary">Created {note.created}<br/>Updated {note.lastUpdate}</Typography>
+            </CardActions>
+        </Card>
+    )
+}
 
 export default function ProjectPage() {
-    const notes = useLoaderData();
-    const { projectId } = useParams();
+    const project = useLoaderData();
+    const notes = Object.values(project.notes);
 
     return (<>
-        <div><Link to="createNote">New Note</Link></div>
+    <Box sx={{ display: 'flex' , justifyContent: 'space-between'}}>
+        <Breadcrumbs aria-label="breadcrumb">
+        <Link
+            underline="hover"
+            color="inherit"
+            to="/projects">
+            Projects
+        </Link>
+        <Typography color="text.primary">{project.projectDisplayName}</Typography>
+        </Breadcrumbs>
 
-        {
-        notes.map((note)=> 
-            <div key={note.noteId}>
-                <RouterMarkdown>{ note.content }</RouterMarkdown>
-                <Link to={`notes/${note.noteId}`}>Edit</Link><br/>
-                <span>Created: {note.created}</span>&nbsp;
-                <span>Last update: {note.lastUpdate}</span>
-            </div>
-        )
+        <Fab color="primary" aria-label="add" component={Link} to={`/projects/${project.projectId}/createNote`}><AddIcon /></Fab>
+
+    </Box>
+    {
+            notes.map((note) => <NoteCard key={note.noteId} projectId={project.projectId} note={note} />)      
         }
-    </>);
+    </>
+
+
+     );
 }
 
 export function loader({request, params}) {
-    return getProjectNotes(params.projectId);
+    return getProject(params.projectId);
 }

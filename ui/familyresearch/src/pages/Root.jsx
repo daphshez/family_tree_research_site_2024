@@ -9,7 +9,9 @@ export default function RootLayout() {
     <Container>
       <MainNavigation />
       <main>
+        <Container sx={{marginTop: '20px'}}>
         <Outlet />
+        </Container>
       </main>
     </Container>
   );

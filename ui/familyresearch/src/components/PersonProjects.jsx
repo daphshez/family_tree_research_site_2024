@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import RouterMarkdown from "../components/RouterMarkdown";
+import CustomMarkdown from "../components/CustomMarkdown";
 
 export default function PersonProjects({person}) {
     const projects = person.projects;
@@ -17,14 +17,7 @@ export default function PersonProjects({person}) {
                         {
                             p.notes.map(n => (
                                 <li key={n.noteId}>
-                                    <RouterMarkdown components={{
-                                        a(props) {
-                                            const {node, href, ...rest} = props
-                                            if (href.startsWith("/")) {
-                                                return <Link to={href} {...rest} />
-                                            }
-                                        }
-                                    }}>{n.content}</RouterMarkdown>
+                                    <CustomMarkdown>{n.content}</CustomMarkdown>
                                 </li>
                             ))
                         }
