@@ -1,21 +1,18 @@
-import { useState, useRef } from "react";
-import { getNote, updateNote, createNewNote, fullDisplayName } from "../backend";
+import { useState, useRef, useEffect } from "react";
+import { getNote, updateNote, createNewNote, fullDisplayName, searchPeople } from "../backend";
 import { useLoaderData, Form, redirect, useParams } from "react-router-dom";
-import NameAutocomplete from "../components/NameAutocomplete";
 import CustomMarkdown from "../components/CustomMarkdown";
-import { TextField, Paper, Button, Typography, Breadcrumbs } from "@mui/material";
+import { TextField, Paper, Button, Typography, Box, Link as MuiLink } from "@mui/material";
 import { Link } from "react-router-dom";
-
 
 function PreviewCard({content}) {
     return (
         <Paper elevation={3} sx={{ minWidth: 400, marginTop: '30px', padding: '10px' }}>
-            <Typography variant="caption">Preview</Typography>
+            <Typography variant="caption">Preview</Typography><br/>
             <CustomMarkdown>{content }</CustomMarkdown>
         </Paper>
     )
 }
-
 
 
 export default function NotePage()
@@ -28,28 +25,83 @@ export default function NotePage()
         const savedNote = useLoaderData();
         defaultContent = savedNote.content;
     } 
-    const [noteContent, setNoteContent] = useState(defaultContent);
-    const [selection, setSelection] = useState([0, 0]);
+    const [note, setNote] = useState({
+      content: defaultContent,
+      search: null
+    });
+   const [suggestions, setSuggestions] = useState([]);
+
+
     const textAreaRef = useRef();
+
+    function stopSearch(newContent = null) {
+        if (note.search != null || newContent != null) {
+            setNote((old) => ({content: newContent ? newContent : old.content, search: null}));
+            setSuggestions([]);
+        }
+    }
+
+    function onKeyDown(event) {
+        switch (event.key) {
+            case "ArrowLeft":
+            case "ArrowRight":
+            case "ArrowUp":
+            case "ArrowDown":
+                stopSearch();
+        }
+    }
 
 
     function handleChange(event) {
-        setNoteContent(event.target.value);
+        const newNoteContent = event.target.value;
+        const selectionStart = event.target.selectionStart;
+
+        if (note.search) {
+            if (selectionStart < note.search.start ||   // probably back spaced to remove the search starting charachters 
+                newNoteContent.substring(selectionStart, selectionStart-1) === "\n" || 
+                newNoteContent.substring(selectionStart, selectionStart-1) === "]"
+                ) {
+                stopSearch(newNoteContent);
+            }
+            else {
+                setNote((old) => ({content: newNoteContent, 
+                                   search: {start: old.search.start, end: selectionStart, term: newNoteContent.substring(old.search.start, selectionStart)}}));
+            }
+        } else {    // we haven't been searching; we need to check whether the last two charachters are "[@"
+            if (selectionStart >= 2 && 
+                newNoteContent.substring(selectionStart - 2, selectionStart) == "[@")
+            {
+                setNote({content: newNoteContent,  search: {start: selectionStart, end: selectionStart, term: ""}});
+            } 
+            else {
+                stopSearch(newNoteContent);
+            }
+        }
     }
 
-    function handleSelect(event) {
-        setSelection([event.target.selectionStart, event.target.selectionEnd]);
-    }
+    useEffect(() => {
+        if (note.search) {
+            const people = searchPeople(note.search.term, 5);
+            setSuggestions(people);
+        } 
+    }, [note]);
+
+
 
     function onNameAutocompleteSelect(person) {
-        setNoteContent((noteContent) => {
-            return noteContent.substring(0, selection[0]) + 
-                  fullDisplayName(person) + "](/people/" + person.personId + ")" + noteContent.substring(selection[1]);
-        })
-        textAreaRef.current.focus();
+        console.log(person);
+        setNote((old) => {
+            const prefix = old.content.substring(0, old.search.start);
+            const link = fullDisplayName(person) + "](/people/" + person.personId + ")";
+            const suffix = old.content.substring(old.search.end);
+            return {
+            content:  prefix + link + suffix,
+            search: null
+            }
+        });
+        setSuggestions([]);
     };
 
-    const searching = selection[0] >= 2 && noteContent.substring(selection[0]-2, selection[0]) === "[@";
 
     return (
         <>
@@ -59,22 +111,37 @@ export default function NotePage()
             <TextField 
               multiline
               fullWidth
-              minRows={10}
-              minWidth={400}
+              rows={15}
               variant="filled" 
               label="Markdown"
               required
-              name="noteContent" onChange={handleChange} onSelect={handleSelect} value={noteContent} ref={textAreaRef}/>
+              name="noteContent" 
+              onChange={handleChange} 
+              onMouseDown={() => stopSearch()}
+              onKeyDown={onKeyDown}
+              value={note.content} 
+              ref={textAreaRef}/>
 
+            <Box sx={{display: 'flex', flexWrap: 'wrap', borderBottom: '1px solid gray'}}>
+            { suggestions.map(
+                (person) =>  <MuiLink 
+                              key={person.personId} 
+                              color="secondary" 
+                              variant="body2" 
+                              onClick={() => onNameAutocompleteSelect(person)}
+                              sx={{paddingRight: '10px', cursor: 'pointer'}}>@{fullDisplayName(person)}</MuiLink>
+            ) }
+            </Box>
             <Button type="submit">Save</Button>
             <Button component={Link} to={`/projects/${projectId}`}>Cancel</Button>
         </Form>
         </Paper>
 
+      
 
-        <PreviewCard content={noteContent}/>
+        <PreviewCard content={note.content}/>
 
-        {searching && <NameAutocomplete onSelect={onNameAutocompleteSelect}/>}
+        {/* {searching && <NameAutocomplete onSelect={onNameAutocompleteSelect}/>} */}
         
 
         </>
