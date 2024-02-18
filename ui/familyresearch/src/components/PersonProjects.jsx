@@ -1,37 +1,44 @@
 import { Link } from "react-router-dom";
 import CustomMarkdown from "../components/CustomMarkdown";
+import { Box, Typography, Card, CardContent, CardActions, Button, Link as MuiLink } from "@mui/material";
+
+function NoteCard({note, project}) {
+    return (
+        <Card sx={{ minWidth: 400, marginBottom: '20px' }}>
+            <CardContent>
+            <MuiLink sx={{paddingBottom: '10px', display: 'block', textAlign: 'right'}} component={Link} to={`/projects/${project.projectId}`}>Project: {project.projectDisplayName}</MuiLink>
+                    <CustomMarkdown gutterBottom>
+                    { note.content }
+                    </CustomMarkdown>
+                
+            </CardContent>
+            <CardActions sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                    <Button component={Link} to={`/projects/${project.projectId}/notes/${note.noteId}`}>Edit</Button>
+                    <Typography variant="body2" color="text.secondary">Created {note.created}<br/>Updated {note.lastUpdate}</Typography>
+            </CardActions>
+        </Card>
+    )
+}
 
 export default function PersonProjects({person}) {
     const projects = person.projects;
 
     if (projects && projects.length > 0) {
 
-        return (<div>
-            <header>In Projects</header>
-            <ul>
+        return (
+            <Box sx={{
+                marginBottom: '20px'
+            }}>
+                <Typography variant="h6">Notes</Typography>
             {
                 projects.map(p => (
-                    <li key={p.projectId}>
-                        <Link to={`/projects/${p.projectId}`}>{p.projectDisplayName}</Link>
-                        <ol>
-                        {
                             p.notes.map(n => (
-                                <li key={n.noteId}>
-                                    <CustomMarkdown>{n.content}</CustomMarkdown>
-                                </li>
+                                <NoteCard note={n} project={p} />
                             ))
-                        }
-                        </ol>
-                    </li>
-
-
-
-
                 ))
             }
-            </ul>
 
-        </div>)
+        </Box>)
     };    
 
 }

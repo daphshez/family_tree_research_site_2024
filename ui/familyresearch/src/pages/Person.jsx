@@ -3,7 +3,7 @@ import { getPerson, fullDisplayName } from '../backend';
 import PersonDetails from '../components/PersonDetails';
 import RelatedPeople from '../components/RelatedPeople';
 import PersonProjects from '../components/PersonProjects';
-import { Typography, Box } from '@mui/material';
+import { Box } from '@mui/material';
 
 
 export default function PersonPage() {
