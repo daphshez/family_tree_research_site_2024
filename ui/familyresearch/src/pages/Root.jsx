@@ -1,18 +1,37 @@
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLoaderData } from 'react-router-dom';
 
 import MainNavigation from '../components/MainNavigation';
 
 import Container from '@mui/material/Container'
+import { getUser } from '../utils';
+import LoginPage from './Login';
 
 export default function RootLayout() {
-  return (
-    <Container>
-      <MainNavigation />
-      <main>
-        <Container sx={{marginTop: '20px'}}>
-        <Outlet />
-        </Container>
-      </main>
-    </Container>
-  );
+  const user = useLoaderData();
+
+
+  function logout () {
+    localStorage.removeItem('user');
+    return redirect('/login');
+  }
+
+  if (user) {
+    return (
+      <Container>
+        <MainNavigation user={user} />
+        <main>
+          <Container sx={{marginTop: '20px'}}>
+          <Outlet />
+          </Container>
+        </main>
+      </Container>
+    );
+  } else {
+    return <LoginPage/>
+  }
+
+}
+
+export function loader() { 
+  return getUser();
 }

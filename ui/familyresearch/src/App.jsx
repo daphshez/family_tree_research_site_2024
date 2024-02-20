@@ -3,10 +3,12 @@ import { createBrowserRouter, RouterProvider} from 'react-router-dom';
 
 import PeoplePage, { loader as peopleLoader, action as addPersonAction } from './pages/People.jsx';
 import ProjectsPage , {loader as projectsLoader, action as addProjectAction } from './pages/Projects.jsx';
-import RootLayout from './pages/Root.jsx';
+import RootLayout, {loader as userLoader } from './pages/Root.jsx';
 import PersonPage, { loader as personLoader } from './pages/Person.jsx';
 import ProjectPage, { loader as projectNotesLoader } from './pages/Project.jsx';
 import NotePage, { loader as noteLoader, action as noteAction} from './pages/Note.jsx';
+import LoginPage from "./pages/Login.jsx";
+import { action as loginAction} from './components/LoginForm.jsx';
 
 import '@fontsource/roboto/300.css';
 import '@fontsource/roboto/400.css';
@@ -17,6 +19,8 @@ const router = createBrowserRouter([
   {
     path: '/',
     element: <RootLayout />,
+    loader: userLoader,
+    action: loginAction,
     // errorElement: <ErrorPage />,
     children: [
       { 
@@ -53,9 +57,15 @@ const router = createBrowserRouter([
         element: <NotePage/>,
         action: noteAction
       }
-    
     ],
-  }
+    
+  },
+  {
+    path: 'login',
+    element: <LoginPage />,
+    action: loginAction,
+  },
+
 ]);
 
 

@@ -33,4 +33,25 @@ function isObject(item) {
   }
 
 
+  export function getUser() {
+    const user = JSON.parse( localStorage.getItem('user'));
   
+    if (!user) {
+      return null;
+    }
+  
+    return user;
+  }
+  
+  export function saveUser(user) {
+    localStorage.setItem('user', JSON.stringify(user));
+  }
+
+  export function getAuthToken() {
+    const user = getUser();
+    return user ? user.token : null;
+  }
+  
+  export function removeUser() { 
+    localStorage.removeItem('user');
+  }

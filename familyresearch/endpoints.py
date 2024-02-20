@@ -1,4 +1,4 @@
-from flask import Blueprint
+from flask import Blueprint, request
 
 from familyresearch.models import Person, AdvancedDate, ResearchProject, ResearchNote
 
@@ -29,6 +29,15 @@ def deep_remove_empty_values(d: dict) -> dict:
         return result
 
     return internal_for_dicts(d)
+
+
+@endpoints.post('/login')
+def login():
+    return {
+        'token': 'mysecrettoken',
+        'username': 'user123',
+        'email': 'user123@gmail.com'
+    }
 
 
 @endpoints.get('/people')
