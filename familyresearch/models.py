@@ -20,6 +20,7 @@ class Place(db.EmbeddedDocument):
 
 class ResearchProject(db.Document):
     name = db.StringField()
+    created_on = db.DateTimeField(default=datetime.datetime.utcnow)
 
 
 class Person(db.Document):
@@ -62,9 +63,8 @@ class Person(db.Document):
 
 class ResearchNote(db.Document):
     research_project = db.LazyReferenceField(ResearchProject)
-    project_name = db.StringField()
-    created_on = db.DateTimeField(default=datetime.datetime.utcnow)
-    last_modified = db.DateTimeField(default=datetime.datetime.utcnow)
+    created = db.DateTimeField(default=datetime.datetime.utcnow)
+    last_updated = db.DateTimeField(default=datetime.datetime.utcnow)
     people = db.ListField(db.LazyReferenceField(Person))
 
-    note = db.StringField()
+    content = db.StringField()

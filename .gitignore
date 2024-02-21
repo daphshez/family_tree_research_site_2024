@@ -27,3 +27,5 @@ dist-ssr
 #
 .pytest_cache
 __pycache__
+
+familyresearch/static/*
