@@ -50,6 +50,6 @@ export function loader() {
 export async function action({ request, params }) {
         const formData = await request.formData();
         const name = formData.get("newPersonName");
-        const newId = createNewPerson(name);
+        const newId = await createNewPerson(name);
         return redirect(`/people/${newId}`);
 }

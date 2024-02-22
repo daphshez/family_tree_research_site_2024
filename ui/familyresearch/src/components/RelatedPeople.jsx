@@ -14,7 +14,6 @@ export default function RelatedPeople({ person }) {
     const [isAddRelationFormOpen, setAddRelationFormOpen] = useState(false);
     
 
-
     function removeRelation(removePersonId) {
         setRelations((relations) => (relations.filter((o) => o.personId != removePersonId)));
         setRelationToRemove(removePersonId);
@@ -37,7 +36,7 @@ export default function RelatedPeople({ person }) {
 
     useEffect(() => {
         if (relationToRemove) {
-            deleteRelationships([person.personId, relationToRemove]);
+            deleteRelationships(person.personId, relationToRemove);
             setRelationToRemove(null);
         }
     }, [relationToRemove])
@@ -48,7 +47,10 @@ export default function RelatedPeople({ person }) {
         }}>
         <Typography variant="h6">Related people</Typography>
         <List>
-        {relations.map( (other) => (
+          
+        { 
+            relations.map( 
+            (other) => (
                 <ListItem 
                     disablePadding key={other.personId}
                     secondaryAction={
@@ -60,7 +62,8 @@ export default function RelatedPeople({ person }) {
                         </ListItemButton>
                 </ListItem>
                    
-            ) )}
+            )
+            ) } 
 
         <ListItem disablePadding>
             <ListItemButton onClick={() => setAddRelationFormOpen(true)}><AddIcon/></ListItemButton>

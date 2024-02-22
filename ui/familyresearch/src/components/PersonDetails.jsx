@@ -1,11 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import PersonDetail from './PersonDetail';
 import PersonBooleanDetail from './PersonBooleanDetail';
 import PersonMultiselectDetail from './PersonMultiselectDetail';
 import { formatAdvancedDate, parseAdvancedDate } from '../advanced-dates';
 import { mergeDeep } from '../utils'
-import { updatePerson, isAlive} from "../backend"
-import Box from "@mui/material/Box";
+import { updatePerson } from "../backend"
 
 
 export default function PersonDetails({inputPerson}) {
@@ -18,16 +17,11 @@ export default function PersonDetails({inputPerson}) {
     const birthPlace = person.birth && person.birth.place ? person.birth.place.displayName: null;
     const deathPlace = person.death && person.death.place ? person.death.place.displayName : null;
 
-    const isPersonAlive = isAlive(person);
-
 
     function handleUpdate(update) {
         setPersonState((person) => mergeDeep(person, update));
+        updatePerson(person.personId, update);
     } 
-
-    useEffect(() => {
-        updatePerson(person);
-    }, [person]);
 
     return (
         <>
@@ -64,14 +58,14 @@ export default function PersonDetails({inputPerson}) {
 
         <PersonBooleanDetail detailId="isAlive"
                              title="Alive"
-                             defaultFieldValue={isPersonAlive}
-                             makeUpdate={(value) => ({death: {isAlive: value}})} 
+                             defaultFieldValue={person.isAlive}
+                             makeUpdate={(value) => ({isAlive: value})} 
                              applyUpdate={handleUpdate}
 
                              />
 
         {
-            !isPersonAlive && 
+            person.isAlive === 'no' && 
 
             <PersonDetail detailId="dateOfDeath" 
                         title="Date of Death"
@@ -89,7 +83,7 @@ export default function PersonDetails({inputPerson}) {
 
 
         {
-            !isAlive && 
+            person.isAlive === 'no' && 
 
             <PersonDetail detailId="placeOfDeath"
                           title="Death place"

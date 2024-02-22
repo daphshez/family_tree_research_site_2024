@@ -81,15 +81,13 @@ export default function NotePage()
 
     useEffect(() => {
         if (note.search) {
-            const people = searchPeople(note.search.term, 5);
-            setSuggestions(people);
+            searchPeople(note.search.term, 5).then((people) => setSuggestions(people));
         } 
     }, [note]);
 
 
 
     function onNameAutocompleteSelect(person) {
-        console.log(person);
         setNote((old) => {
             const prefix = old.content.substring(0, old.search.start);
             const link = fullDisplayName(person) + "](/people/" + person.personId + ")";

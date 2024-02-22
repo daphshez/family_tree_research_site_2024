@@ -1,21 +1,36 @@
 from familyresearch import db
 import datetime
 
+gender_choices = ((0, 'female'), (1, 'male'), (2, 'other'))
+
+
+def get_choice_value(s, choices):
+    return next(pair for pair in choices if pair[1] == s)[0]
+
+
+def get_gender_value(s):
+    return get_choice_value(s, gender_choices)
+
+
+date_qualifier_choices = ((0, 'exact'),
+                          (1, 'about'),
+                          (2, 'before'),
+                          (3, 'after'))
+
+
+def get_date_qualifier_value(s):
+    return get_choice_value(s, date_qualifier_choices)
+
 
 class AdvancedDate(db.EmbeddedDocument):
-    day_of_month = db.IntField()
+    day = db.IntField()
     month = db.IntField()
     year = db.IntField()
-    qualifier = db.IntField(choices=((0, 'exact'),
-                                     (1, 'about'),
-                                     (2, 'before'),
-                                     (3, 'after')), default=0)
-    note = db.StringField()
+    qualifier = db.IntField(choices=date_qualifier_choices, default=0)
 
 
 class Place(db.EmbeddedDocument):
     display_name = db.StringField()
-    note = db.StringField()
 
 
 class ResearchProject(db.Document):
@@ -24,8 +39,8 @@ class ResearchProject(db.Document):
 
 
 class Person(db.Document):
-    created_on = db.DateTimeField(default=datetime.datetime.utcnow)
-    last_modified = db.DateTimeField(default=datetime.datetime.utcnow)
+    created = db.DateTimeField(default=datetime.datetime.utcnow)
+    last_update = db.DateTimeField(default=datetime.datetime.utcnow)
 
     class RelatedPerson(db.EmbeddedDocument):
         other_person = db.ObjectIdField()
@@ -36,35 +51,32 @@ class Person(db.Document):
         relationship_type = db.IntField(choices=((1, 'birth'),
                                                  (2, 'adoptive'),
                                                  (3, 'step')))
-        note = db.StringField()
-
-    class FieldNote(db.EmbeddedDocument):
-        field_name = db.StringField()
-        note = db.StringField()
 
     display_name = db.StringField()
-    display_name_note = db.StringField()
     birth_date = db.EmbeddedDocumentField(AdvancedDate)
     birth_place = db.EmbeddedDocumentField(Place)
 
-    is_alive = db.IntField(choices=((0, 'no'), (1, 'yes'), (2, 'unknown')))
-    is_alive_note = db.StringField()
+    is_alive = db.BooleanField()
     death_date = db.EmbeddedDocumentField(AdvancedDate)
     death_place = db.EmbeddedDocumentField(Place)
-    cause_of_death = db.IntField(choices=((1, 'natural'), ))
-    cause_of_death_note = db.StringField()
 
-    gender = db.IntField(choices=( (0, 'female'), (1, 'male'), (2, 'other')))
-    gender_note = db.StringField()
+    gender = db.IntField(choices=gender_choices)
 
-    person_note = db.StringField()
     related_people = db.EmbeddedDocumentListField(RelatedPerson)
+
+
+class Relationship(db.Document):
+    person1 = db.LazyReferenceField(Person)
+    person2 = db.LazyReferenceField(Person)
+    person2_role = db.StringField()  # choices?
+    relationship_option = db.StringField()
+    created = db.DateTimeField(default=datetime.datetime.utcnow)
 
 
 class ResearchNote(db.Document):
     research_project = db.LazyReferenceField(ResearchProject)
     created = db.DateTimeField(default=datetime.datetime.utcnow)
-    last_updated = db.DateTimeField(default=datetime.datetime.utcnow)
+    last_update = db.DateTimeField(default=datetime.datetime.utcnow)
     people = db.ListField(db.LazyReferenceField(Person))
 
     content = db.StringField()

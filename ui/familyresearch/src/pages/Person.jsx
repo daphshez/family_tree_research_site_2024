@@ -23,7 +23,7 @@ export default function PersonPage() {
 }
 
 
-export function loader({request, params}) {
+export async function loader({request, params}) {
     const id = params.personId;
-    return getPerson(id);
+    return await getPerson(id);
 }

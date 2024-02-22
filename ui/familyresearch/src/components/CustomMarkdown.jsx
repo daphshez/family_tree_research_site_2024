@@ -16,7 +16,7 @@ export default function CustomMarkdown({children}) {
         },
         p(props) {
             const {node, ...rest} = props;
-            return <Typography variant='body' {...rest}/>
+            return <Typography variant='body' component='p' sx={{ marginBottom: '5px'}} {...rest}/>
         },
         h1(props) {
             const {node, ...rest} = props;

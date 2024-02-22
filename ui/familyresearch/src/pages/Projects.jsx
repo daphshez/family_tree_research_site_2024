@@ -18,6 +18,7 @@ function NewForm({open, handleClose}) {
           <DialogContent>
             <TextField
               autoFocus
+              autoComplete='off'
               required
               margin="dense"
               id="newProjectName"
@@ -71,6 +72,6 @@ export default function ProjectsPage() {
  export async function action({ request, params }) {
   const formData = await request.formData();
   const name = formData.get("newProjectName");
-  const newId = createNewProject(name);
+  const newId = await createNewProject(name);
   return redirect(`/projects/${newId}`);
 }

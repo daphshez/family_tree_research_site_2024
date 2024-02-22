@@ -43,26 +43,6 @@ export default function PersonDetail({detailId,
     }
 
 
-    // if (fieldValue != null)
-    // {
-    //     return (<div>
-    //         <label htmlFor={detailId}>{title}:</label>
-    //         <input name={detailId} value={fieldValue} onChange=/>
-
-    //         <span className="validationError">{error}</span>
-    //     </form></div>);
-    // }
-    // else
-    // {
-
-    //     return (<div>
-    //         <span>{title}: </span>
-    //         <span>{defaultFieldValue}</span> 
-    //         <button onClick={}>Edit</button>  
-    //         </div>
-    //     );
-    // }
-
 
     if (fieldValue != null) {
         return (
@@ -73,6 +53,7 @@ export default function PersonDetail({detailId,
                 <form onSubmit={handleSaveEdit}>
                     <TextField 
                     name={detailId} 
+                    autoComplete="off"
                     id={detailId} 
                     label={title}
                     value={fieldValue} 

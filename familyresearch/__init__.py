@@ -3,6 +3,8 @@ from flask_cors import CORS
 from flask_mongoengine import MongoEngine
 import os
 
+from werkzeug.exceptions import NotFound
+
 db = MongoEngine()
 
 
@@ -25,6 +27,8 @@ def create_app(config=None):
     @app.route('/', defaults={'path': ''})
     @app.route('/<path:path>')
     def catch_all(path):
+        if path.startswith('/api'):
+            raise NotFound()
         return app.send_static_file("index.html")
 
     return app

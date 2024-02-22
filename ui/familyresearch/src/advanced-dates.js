@@ -35,14 +35,16 @@ export function formatAdvancedDate(d) {
 export function parseAdvancedDate(s) {
 
     const getQualifier = (pre) => {
-        let cleaned = pre.trim().toLowerCase();
-        switch (cleaned) {
-            case 'abt.':
-                return 'about';
-            case 'about':
-            case 'before':
-            case 'after': 
-                return cleaned;
+        if (pre) {
+            let cleaned = pre.trim().toLowerCase();
+            switch (cleaned) {
+                case 'abt.':
+                    return 'about';
+                case 'about':
+                case 'before':
+                case 'after': 
+                    return cleaned;
+            }
         }
     }
 
@@ -50,7 +52,8 @@ export function parseAdvancedDate(s) {
     const bits = s.trim().split(" ").filter((bit) => (bit.length > 0));
     if (bits.length >= 1 && bits.length <= 2) {
         const tryYear = parseInt(bits.pop().trim());
-        if (tryYear && tryYear > 1500 && tryYear < 2500 && (bits.length == 0 || getQualifier(bits[0]))) 
+        const qualifierOK = bits.length == 0 || getQualifier(bits[0]);
+        if (tryYear && tryYear > 1500 && tryYear < 2500 && qualifierOK) 
         {
             const output = {year: tryYear};
             const qualifier = getQualifier(bits[0]);

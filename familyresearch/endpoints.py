@@ -1,10 +1,39 @@
 import datetime
+from collections import defaultdict
+from typing import Optional
 
+from bson import ObjectId
 from flask import Blueprint, request
+from mongoengine import Q
 
-from familyresearch.models import Person, AdvancedDate, ResearchProject, ResearchNote
+from familyresearch.models import Person, AdvancedDate, ResearchProject, ResearchNote, get_gender_value, Relationship, \
+    get_date_qualifier_value
+import re
 
 endpoints = Blueprint('endpoints', __name__)
+
+
+def format_is_alive(is_alive: Optional[bool]):
+    if is_alive is None:
+        return 'unknown'
+    return 'yes' if is_alive else 'no'
+
+
+def parse_is_alive(is_alive: Optional[str]):
+    if is_alive is None:
+        return None
+    if is_alive.lower() == 'yes':
+        return True
+    if is_alive.lower() == 'no':
+        return False
+    if is_alive.lower() == 'unknown':
+        return None
+    raise ValueError(f'Unknown value {is_alive}')
+
+
+def find_people(note_content):
+    search_regexp = re.compile(r'\(/people/([a-f\d]{24})\)')
+    return [ObjectId(person_id) for person_id in search_regexp.findall(note_content)]
 
 
 def deep_remove_empty_values(d: dict) -> dict:
@@ -56,10 +85,10 @@ def create_project():
 @endpoints.get('/projects')
 def list_projects():
     note_count_pipeline = [
-        {"$group": {"research_project": "$research_project", "count": {"$sum": 1}}},
+        {"$group": {"_id": "$research_project", "count": {"$sum": 1}}},
     ]
-    docs = ResearchProject.objects().aggregate(note_count_pipeline)
-    counts = {doc['research_project']: doc['count'] for doc in docs}
+    docs = ResearchNote.objects().aggregate(note_count_pipeline)
+    counts = {doc['_id']: doc['count'] for doc in docs}
 
     return {
         'projects': [
@@ -72,7 +101,7 @@ def list_projects():
     }
 
 
-@endpoints.get('/projects/<str:projectId>')
+@endpoints.get('/projects/<project_id>')
 def get_project(project_id):
     project = ResearchProject.objects(id=project_id).get()
     project_notes = ResearchNote.objects(research_project=project_id)
@@ -84,141 +113,227 @@ def get_project(project_id):
                 'noteId': str(note.id),
                 'content': note.content,
                 'created': note.created.isoformat(),
-                'lastUpdated': note.last_updated.isoformat()
+                'lastUpdate': note.last_update.isoformat()
             } for note in project_notes
         ]
     }
 
 
-@endpoints.put('/projects/<str:project_id>/notes/create')
+@endpoints.put('/projects/<project_id>/notes/create')
 def create_note(project_id):
     d = request.json
     note_content = d['content']
-    # todo: extract people
     note = ResearchNote(
         research_project=project_id,
-        content=note_content
+        content=note_content,
+        people=find_people(note_content)
     ).save()
     return {
         'noteId': str(note.id)
     }
 
 
-@endpoints.post('/projects/<str:projectId>/notes/<str:note_id>')
+@endpoints.post('/projects/<project_id>/notes/<note_id>')
 def update_note(project_id, note_id):
     d = request.json
     note_content = d['content']
     ResearchNote.objects(id=note_id).modify(content=note_content,
-                                            last_updated=datetime.datetime.utcnow())
-    return "", 204
+                                            people=find_people(note_content),
+                                            last_update=datetime.datetime.utcnow())
+    return {}, 204
 
 
-@endpoints.post('/projects/<str:projectId>/notes/<str:note_id>')
+@endpoints.get('/projects/<project_id>/notes/<note_id>')
 def get_note(project_id, note_id):
-    note = ResearchNote(id=note_id).get()
+    note = ResearchNote.objects(id=note_id).get()
     return {
         'noteId': str(note.id),
         'content': note.content,
         'created': note.created.isoformat(),
-        'lastUpdated': note.last_updated.isoformat()
+        'lastUpdate': note.last_update.isoformat()
     }
 
-# @endpoints.put('/people/create')
-# def create_person():
-#     json = request.json
-#
-#
-# @endpoints.get('/people')
-# def list_people():
-#     return {
-#         'people': [
-#             {
-#                 'personId': str(person.id),
-#                 'personDisplayName': person.display_name,
-#             }
-#             for person in Person.objects()
-#         ]
-#     }
-#
-#
-# @endpoints.get('/people/<person_id>')
-# def get_person(person_id):
-#     person = Person.objects.get(id=person_id)
-#
-#     pipeline = [
-#         {
-#             '$match': {
-#                 "people": person.id,
-#             }
-#         },
-#         {
-#             '$sort': {'last_modified': -1}
-#         },
-#         {
-#             '$group': {
-#                 '_id': '$research_project',
-#                 'note': {'$first': '$$CURRENT'},
-#             }
-#         },
-#
-#     ]
-#
-#     project_notes = ResearchNote.objects().aggregate(pipeline)
-#
-#     def render_advanced_date(advanced_date: AdvancedDate):
-#         if not advanced_date:
-#             return {}
-#         return {
-#             'year': advanced_date.year,
-#             'month': advanced_date.month,
-#             'day': advanced_date.day_of_month,
-#             'qualifier': advanced_date.get_qualifier_display(),
-#             'note': advanced_date.note
-#         }
-#
-#     return deep_remove_empty_values({
-#         'personId': str(person.id),
-#         'personDisplayName': person.display_name,
-#         'personDisplayNameNote': person.display_name_note,
-#         'birth': {
-#             'date': render_advanced_date(person.birth_date),
-#             'place': {
-#                 'displayName': person.birth_place.display_name,
-#                 'note': person.birth_place.note
-#             } if person.birth_place else {}
-#         },
-#         'death': {
-#             'isAlive': person.get_is_alive_display(),
-#             'isAliveNote': person.is_alive_note,
-#             'date': render_advanced_date(person.death_date),
-#             'place': {
-#                 'displayName': person.death_place.display_name,
-#                 'note': person.death_place.note
-#             } if person.death_place else {},
-#             'cause': person.get_cause_of_death_display(),
-#             'causeNote': person.cause_of_death_note
-#         },
-#         'gender': person.get_gender_display(),
-#         'genderNote': person.gender_note,
-#         'note': person.person_note,
-#         'relations': [
-#             {
-#                 'personId': str(relation.other_person),
-#                 'personDisplayName': relation.other_person_display_name,
-#                 'otherPersonRole': relation.get_their_role_display(),
-#                 'relationshipType': relation.get_relationship_type_display(),
-#                 'note': relation.note
-#             } for relation in person.related_people
-#         ],
-#         'projects': [{
-#             'projectId': str(doc['_id']),
-#             'projectDisplayName': doc['note']['project_name'],
-#             'projectNote': {
-#                 'note': doc['note']['note'],
-#                 'lastModifiedOn': doc['note']['last_modified'].isoformat()
-#             }
-#         } for doc in project_notes],
-#         'createdOn': person.created_on.isoformat(),
-#         'lastModifiedOn': person.last_modified.isoformat(),
-#
-#     })
+
+def render_advanced_date(advanced_date: AdvancedDate):
+    if not advanced_date:
+        return {}
+    return {
+        'year': advanced_date.year,
+        'month': advanced_date.month,
+        'day': advanced_date.day,
+        'qualifier': advanced_date.get_qualifier_display(),
+    }
+
+
+def render_people_for_list(query):
+    people = [
+            deep_remove_empty_values({
+                'personId': str(person.id),
+                'personDisplayName': person.display_name,
+                'birth': {
+                    'date': render_advanced_date(person.birth_date)
+                },
+                'isAlive': format_is_alive(person.is_alive),
+                'death': {
+                    'date': render_advanced_date(person.death_date),
+                }
+            })
+            for person in query
+        ]
+    people.sort(key=lambda p: p['personDisplayName'])
+    return {'people': people}
+
+
+@endpoints.get('/people')
+def list_people():
+    return render_people_for_list(Person.objects())
+
+
+@endpoints.put('/people/create')
+def create_person():
+    d = request.json
+    display_name = d['personDisplayName']
+    person = Person(display_name=display_name).save()
+    return {
+        'personId': str(person.id),
+        'personDisplayName': display_name
+    }
+
+
+@endpoints.get('/people/<person_id>')
+def get_person(person_id):
+    def reverse_role(r):
+        if r == 'parent': return 'child'
+        if r == 'child': return 'parent'
+        return r
+
+    relations = [
+        {
+            'personId': str(r.person1.id) if str(r.person2.id) == person_id else str(r.person2.id),
+            'otherPersonRole': reverse_role(r.person2_role) if str(r.person2.id) == person_id else r.person2_role,
+            'relationshipOption': r.relationship_option
+        } for r in
+        Relationship.objects(Q(person1=person_id) | Q(person2=person_id))
+    ]
+
+    required_ids = {person_id} | {p['personId'] for p in relations}
+    people = {str(person.id): person for person in Person.objects(id__in=required_ids)}
+    person = people[person_id]
+
+    for r in relations:
+        r['personDisplayName'] = people[r['personId']].display_name
+
+    notes_by_project = defaultdict(list)
+    for note in ResearchNote.objects(people=person_id):
+        notes_by_project[str(note.research_project.id)].append(
+            {
+                'noteId': str(note.id),
+                'content': note.content,
+                'created': note.created.isoformat(),
+                'lastUpdate': note.last_update.isoformat()
+            }
+        )
+
+    projects = [
+        {
+            'projectId': str(project.id),
+            'projectDisplayName': project.name,
+            'notes': notes_by_project[str(project.id)]
+        }
+        for project in ResearchProject.objects(id__in=notes_by_project.keys())
+    ]
+
+
+    return deep_remove_empty_values({
+        'personId': str(person.id),
+        'personDisplayName': person.display_name,
+        'birth': {
+            'date': render_advanced_date(person.birth_date),
+            'place': {
+                'displayName': person.birth_place.display_name,
+            } if person.birth_place else {}
+        },
+        'isAlive': format_is_alive(person.is_alive),
+        'death': {
+            'date': render_advanced_date(person.death_date),
+            'place': {
+                'displayName': person.death_place.display_name,
+            } if person.death_place else {},
+        },
+        'gender': person.get_gender_display(),
+        'created': person.created.isoformat(),
+        'lastUpdate': person.last_update.isoformat(),
+        'relations': relations,
+        'projects': projects
+    })
+
+
+@endpoints.post('/people/<person_id>')
+def update_person(person_id):
+    d = request.json
+    update = {}
+    if 'personDisplayName' in d:
+        update['set__display_name'] = d['personDisplayName']
+    if 'birth' in d:
+        if 'date' in d['birth']:
+            update['set__birth_date__day'] = d['birth']['date'].get('day')
+            update['set__birth_date__month'] = d['birth']['date'].get('month')
+            update['set__birth_date__year'] = d['birth']['date'].get('year')
+            if 'qualifier' in d['birth']['date']:
+                update['set__birth_date__qualifier'] = get_date_qualifier_value(d['birth']['date']['qualifier'])
+        if 'place' in d['birth']:
+            update['set__birth_place__display_name'] = d['birth']['place']['displayName']
+    if 'isAlive' in d:
+        update['set__is_alive'] = parse_is_alive(d['isAlive'])
+    if 'death' in d:
+        if 'date' in d['death']:
+            update['set__death_date__day'] = d['death']['date'].get('day')
+            update['set__death_date__month'] = d['death']['date'].get('month')
+            update['set__death_date__year'] = d['death']['date'].get('year')
+            if 'qualifier' in d['death']['date']:
+                update['set__death_date__qualifier'] = get_date_qualifier_value(d['death']['date']['qualifier'])
+        if 'place' in d['death']:
+            update['set__death_place__display_name'] = d['death']['place']['displayName']
+    if 'gender' in d:
+        update['set__gender'] = get_gender_value(d['gender'])
+
+    print(d)
+    print(update)
+    Person.objects(id=person_id).modify(**update)
+
+    return {}
+
+
+@endpoints.post('/people/relations')
+def add_relationship():
+    d = request.json
+    Relationship(person1=d['personId'],
+                 person2=d['otherPersonId'],
+                 person2_role=d['otherPersonRole'],
+                 relationship_option=d['relationshipOption']).save()
+    return {}, 204
+
+
+@endpoints.delete('/people/relations')
+def add_relationships():
+    d = request.json
+    person1 = ObjectId(d['person1'])
+    person2 = ObjectId(d['person2'])
+    Relationship.objects(
+        (Q(person1=person1) & Q(person2=person2)) |
+        (Q(person1=person2) & Q(person2=person1))
+    ).delete()
+    return {}, 204
+
+
+@endpoints.post('/people/search')
+def search_people():
+    raw_search_term = request.json['searchTerm'].upper()
+    max_results = request.json['maxResults']
+    search_term = "".join(d for d in raw_search_term if str.isupper(d))
+    r = re.compile(f'.*{search_term}.*', re.IGNORECASE)
+    query = Person.objects(display_name=r)
+    if max_results:
+        query = query.limit(max_results)
+
+    return render_people_for_list(query)

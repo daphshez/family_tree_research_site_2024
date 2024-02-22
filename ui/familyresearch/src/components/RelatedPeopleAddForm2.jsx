@@ -12,10 +12,10 @@ export default function AddRelationForm({open, handleClose, personId, currentRel
     const [selectedRole, setSelectedRole] = useState("");
     
     useEffect(() => {
-        setPeople(listPeople());
+        listPeople().then((people) => setPeople(people));
     }, []);
 
-    const peopleToInclude = people.filter((person) => person.personId != personId && !currentRelations.includes(person.personId));
+    const peopleToInclude = people ? people.filter((person) => person.personId != personId && !currentRelations.includes(person.personId)) : [];
 
 
     function onSubmit(event) {

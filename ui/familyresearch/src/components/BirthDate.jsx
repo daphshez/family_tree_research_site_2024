@@ -1,7 +1,6 @@
 
 import { useSelector, useDispatch } from 'react-redux';
 import { peopleActions } from '../store/people-slice';
-import { updatePerson } from '../backend';
 import { formatAdvancedDate, parseAdvancedDate } from '../advanced-dates';
 
 export default function BirthDate() {

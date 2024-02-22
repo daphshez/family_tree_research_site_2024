@@ -16,6 +16,7 @@ export default function NewPersonForm({open, handleClose}) {
                 autoFocus
                 required
                 margin="dense"
+                autoComplete="off"
                 id="newPersonName"
                 name="newPersonName"
                 label="Full Name"

@@ -1,95 +1,21 @@
+import { nicerDate, saveUser } from "./utils";
 
-import { PEOPLE_DATA, PROJECTS_DATA } from "./data"
+const serverLocation = 'http://localhost:5000'
 
-import { nicerDate } from "./utils";
-
-export function isAlive(person) {
-    return !person.death || typeof person.death.isAlive === 'undefined' ||  person.death.isAlive;
-}
 
 function birthYear(person) { 
     return person.birth && person.birth.date && person.birth.date.year || "?";
 }
 
 function deathYear(person) {
-    return isAlive(person) ? '' : person.death && person.death.date && person.death.date.year || "?"
+    return person.isAlive != 'no' ? '' : person.death && person.death.date && person.death.date.year || "?"
 }
 
 export function fullDisplayName(person) {
-    return isAlive(person) ? `${person.personDisplayName} (b. ${birthYear(person)})` :
+    return person.isAlive != 'no' ? `${person.personDisplayName} (b. ${birthYear(person)})` :
       `${person.personDisplayName} (${birthYear(person)} - ${deathYear(person)})`;
 }
 
-function getFromStorage() {
-    let people = localStorage.getItem('people');
-    if (!people)
-    {
-        people = JSON.stringify(PEOPLE_DATA);
-        localStorage.setItem('people', people);
-    }
-    return JSON.parse(people);
-}
-
-function getProjectsFromStorage() {
-    let projects = localStorage.getItem('projects');
-    if (!projects)
-    {
-        projects = JSON.stringify(PROJECTS_DATA);
-        localStorage.setItem('projects', projects);
-    }
-    return JSON.parse(projects);
-}
-
-
-
-export function listPeople() {
-    const people = getFromStorage();
-    return Object.values(people).map(person => ({
-        personId: person.personId, personDisplayName: person.personDisplayName, birth: person.birth, death: person.death
-    }));
-}
-
-export function getPerson(personId) {
-    const people = getFromStorage();
-    const person = people[personId]
-    const projects = Object.values(getProjectsFromStorage());
-
-    person.projects = projects.map((p) => {
-        const projectNotes = p.notes ? Object.values(p.notes) : [];
-
-        const filteredNotes = projectNotes.filter((note) => note.content.includes(`(/people/${personId})`));
-                           
-        if (filteredNotes) {
-            return {
-                projectId: p.projectId,
-                projectDisplayName: p.projectDisplayName,
-                notes: filteredNotes
-            }
-        } 
-    }).filter(p => p.notes.length);
-
-
-    return person;
-}
-
-export function updatePerson(person) {
-    const people = getFromStorage();
-    people[person.personId] = person;
-    localStorage.setItem('people', JSON.stringify(people));
-}
-
-export function createNewPerson(personDisplayName) {
-    const people = getFromStorage();
-    const ar = Object.keys(people).map((s) => parseInt(s));
-    const maxOldId = Math.max(...ar);
-    const newId = (maxOldId + 1).toString();
-    people[newId] = {
-        personId: newId,
-        personDisplayName: personDisplayName
-    }
-    localStorage.setItem('people', JSON.stringify(people));
-    return newId;
-}
 
 export const roles = {
     partner: {value: 'partner', title: 'Partner', options: ['married', 'unmarried', 'divorced'], reverse: 'partner'},
@@ -98,123 +24,237 @@ export const roles = {
     sibling: {value: 'sibling', title: 'Sibling', options: ['biological', 'adoptive', 'step', 'half'], 'reverse': 'sibling'},
 };
 
-export function addRelationship({personId, otherPersonId, otherPersonRole, relationshipOption}) {
-    const people = getFromStorage();
-    const person1 = people[personId];
-    const person2 = people[otherPersonId];
 
-    // todo, error handling - objects don't exist, relationship already exists
-    //   relationship type doesn't match role 
+
+//////////////////////////////////////////
+
+export async function login(email, password) {
+    const authData = {email, password};
     
-    if (!person1.relations)
-        person1.relations = [];
-
-    person1.relations = [...person1.relations, {
-        personId: person2.personId,
-        personDisplayName: person2.personDisplayName,
-        otherPersonRole: otherPersonRole,
-        relationshipOption,
-    }];
-
-    if (!person2.relations)
-        person2.relations = []; 
-
-    person2.relations = [...person2.relations, {
-        personId: person1.personId,
-        personDisplayName: person1.personDisplayName,
-        otherPersonRole: roles[otherPersonRole].reverse,
-        relationshipOption}];
-
-    localStorage.setItem('people', JSON.stringify(people));
-}
-
-export function deleteRelationships(people) {
-    // todo, error handling 
-    const allPeople = getFromStorage();
-
-    people.map((personId) => allPeople[personId])
-          .forEach((person) => {
-              person.relations = (person.relations || []).filter((relation) => !people.includes(relation.personId))
-          });
-
-    localStorage.setItem('people', JSON.stringify(allPeople));
+    const response = await fetch(`${serverLocation}/api/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(authData),
+      });
+    
+      if (response.status === 422 || response.status === 401) {
+        return response;
+      }
+    
+      if (!response.ok) {
+        throw json({ message: 'Could not authenticate user.' }, { status: 500 });
+      }
+    
+      const resData = await response.json();
+    
+      saveUser(resData);
+  
 }
 
 
-export function listProjects() {
-    return Object.values(getProjectsFromStorage()).map((p) => ({...p, nNotes: p.notes ? Object.keys(p.notes).length : 0}));
-}
-
-export function createNewProject(name) {
-    const projects = getProjectsFromStorage();
-    const ar = Object.keys(projects).map((s) => parseInt(s));
-    const maxOldId = Math.max(...ar);
-    const newId = (maxOldId + 1).toString();
-    projects[newId] = {
-        projectId: newId,
-        projectDisplayName: name
+export async function listProjects() {
+    const response = await fetch(`${serverLocation}/api/projects`);
+    const resData = await response.json();
+  
+    if (!response.ok) {
+      throw new Error('Failed to fetch places');
     }
-    localStorage.setItem('projects', JSON.stringify(projects));
-    return newId;    
+  
+    return resData.projects;
 }
 
-export function getProject(projectId) {
-    const project = getProjectsFromStorage()[projectId];    
-    const notes = project.notes ? Object.values(project.notes) : [];
-    project.notes = notes.map((note) => {
-        const copied = {...note};
-        copied.created = nicerDate(note.created);
-        copied.lastUpdate = nicerDate(note.lastUpdate);
-        return copied;
+
+export async function createNewProject(name) {
+    const response = await fetch(`${serverLocation}/api/projects/create`, {
+        method: 'PUT',
+        body: JSON.stringify({ projectDisplayName: name }),
+        headers: {
+            'Content-Type': 'application/json',
+        },
     });
-    return project;
-}
 
-export function getNote(projectId, noteId) {
-    const projects = getProjectsFromStorage();
-    const note = {...projects[projectId].notes[noteId]};
-    note.created = nicerDate(note.created);
-    note.lastUpdate = nicerDate(note.lastUpdate);
-    return note;
-}
+    const resData = await response.json();
 
-export function updateNote(projectId, noteId, content) {
-    const projects = getProjectsFromStorage();   
-    const note = projects[projectId].notes[noteId];
-    note.content = content;
-    note.lastUpdate = (new Date()).toISOString();
-    localStorage.setItem('projects', JSON.stringify(projects));
-}
-
-export function createNewNote(projectId, content) {
-    const projects = getProjectsFromStorage(); 
-    const project = projects[projectId];
-    let noteId = "1";
-    if (project.notes) {
-        const ar = Object.keys(project.notes).map((s) => parseInt(s));
-        const maxOldId = Math.max(...ar);
-        noteId = (maxOldId + 1).toString();
-    } else {
-        project.notes = {};
+    if (!response.ok) {
+        throw new Error('Failed to update user data.');
     }
-    const created = (new Date()).toISOString();;
-    project.notes[noteId] = {
-        noteId,
-        content,
-        created,
-        lastUpdate: created
-   };
-   localStorage.setItem('projects', JSON.stringify(projects));
+
+    return resData.projectId;
 }
 
-export function searchPeople(searchBy, maxResults) {
-    const people = getFromStorage();
 
-    const re = new RegExp(searchBy, "i");
+export async function getProject(projectId) {
+    const response = await fetch(`${serverLocation}/api/projects/${projectId}`);
+    const resData = await response.json();
+  
+    if (!response.ok) {
+      throw new Error('Failed to fetch places');
+    }
+
+    if (resData.notes) {
+        resData.notes = resData.notes.map((note) => ({...note, created: nicerDate(note.created), lastUpdate: nicerDate(note.lastUpdate)}));
+    }
+  
+    return resData;
+}
+
+export async function createNewNote(projectId, content) {
+    const response = await fetch(`${serverLocation}/api/projects/${projectId}/notes/create`, {
+        method: 'PUT',
+        body: JSON.stringify({ content }),
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+
+    const resData = await response.json();
+
+    if (!response.ok) {
+        throw new Error('Failed to update user data.');
+    }
+
+    return resData.noteId;
+}
+
+export async function getNote(projectId, noteId) {
+    const response = await fetch(`${serverLocation}/api/projects/${projectId}/notes/${noteId}`);
+    const resData = await response.json();
+  
+    if (!response.ok) {
+      throw new Error('Failed to fetch places');
+    }
+
+    resData.created = nicerDate(resData.created);
+    resData.lastUpdate = nicerDate(resData.lastUpdate);
+  
+    return resData;
+}
 
 
-    return Object.values(people).filter(person => person.personDisplayName.search(re) >= 0).map(person => ({
-        personId: person.personId, personDisplayName: person.personDisplayName, birth: person.birth, death: person.death
-    })).splice(0, maxResults);
+export async function updateNote(projectId, noteId, content) {
+    const response = await fetch(`${serverLocation}/api/projects/${projectId}/notes/${noteId}`, {
+        method: 'POST',
+        body: JSON.stringify({ content }),
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
 
+    const resData = await response.json();
+  
+    if (!response.ok) {
+      throw new Error('Failed to fetch places');
+    }
+}
+
+
+export async function listPeople() {
+    const response = await fetch(`${serverLocation}/api/people`);
+    const resData = await response.json();
+  
+    if (!response.ok) {
+      throw new Error('Failed to fetch places');
+    }
+  
+    return resData.people;
+}
+
+export async function searchPeople(searchBy, maxResults) {
+    const response = await fetch(`${serverLocation}/api/people/search`, {
+        method: 'POST',
+        body: JSON.stringify({ searchTerm: searchBy, maxResults }),
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+    const resData = await response.json();
+  
+    if (!response.ok) {
+      throw new Error('Failed to fetch places');
+    }
+  
+    return resData.people;
+}
+
+export async function createNewPerson(name) {
+    const response = await fetch(`${serverLocation}/api/people/create`, {
+        method: 'PUT',
+        body: JSON.stringify({ personDisplayName: name }),
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+
+    const resData = await response.json();
+
+    if (!response.ok) {
+        throw new Error('Failed to update user data.');
+    }
+
+    return resData.personId;
+}
+
+export async function getPerson(personId) {
+    const response = await fetch(`${serverLocation}/api/people/${personId}`);
+    const resData = await response.json();
+  
+    if (!response.ok) {
+      throw new Error('Failed to fetch places');
+    }
+
+    if (resData.notes) {
+        resData.notes = resData.notes.map((note) => ({...note, created: nicerDate(note.created), lastUpdate: nicerDate(note.lastUpdate)}));
+    }
+  
+    return resData;
+}
+
+export async function updatePerson(personId, update) {
+    const response = await fetch(`${serverLocation}/api/people/${personId}`, {
+        method: 'POST',
+        body: JSON.stringify(update),
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+
+    const resData = await response.json();
+  
+    if (!response.ok) {
+      throw new Error('Failed to fetch places');
+    }
+
+}
+
+export async function addRelationship({personId, otherPersonId, otherPersonRole, relationshipOption}) {
+    const r = {personId, otherPersonId, otherPersonRole, relationshipOption};
+
+    const response = await fetch(`${serverLocation}/api/people/relations`, {
+        method: 'POST',
+        body: JSON.stringify(r),
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+    const resData = await response.json();
+  
+    if (!response.ok) {
+      throw new Error('Failed to fetch places');
+    }
+}
+
+export async function deleteRelationships(person1, person2) {
+    const response = await fetch(`${serverLocation}/api/people/relations`, {
+        method: 'DELETE',
+        body: JSON.stringify({person1, person2}),
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+  
+    if (!response.ok) {
+      throw new Error('Failed to fetch places');
+    }
 }
