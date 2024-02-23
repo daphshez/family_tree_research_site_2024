@@ -27,10 +27,19 @@ class AdvancedDate(db.EmbeddedDocument):
     month = db.IntField()
     year = db.IntField()
     qualifier = db.IntField(choices=date_qualifier_choices, default=0)
+    note = db.StringField()
 
 
 class Place(db.EmbeddedDocument):
     display_name = db.StringField()
+    note = db.StringField()
+
+
+class PersonLink(db.EmbeddedDocument):
+    id = db.StringField()
+    url = db.StringField()
+    description = db.StringField()
+    created = db.DateTimeField(default=datetime.datetime.utcnow)
 
 
 class ResearchProject(db.Document):
@@ -53,6 +62,7 @@ class Person(db.Document):
                                                  (3, 'step')))
 
     display_name = db.StringField()
+    display_name_note = db.StringField()
     birth_date = db.EmbeddedDocumentField(AdvancedDate)
     birth_place = db.EmbeddedDocumentField(Place)
 
@@ -63,6 +73,8 @@ class Person(db.Document):
     gender = db.IntField(choices=gender_choices)
 
     related_people = db.EmbeddedDocumentListField(RelatedPerson)
+
+    links = db.EmbeddedDocumentListField(RelatedPerson)
 
 
 class Relationship(db.Document):

@@ -23,34 +23,38 @@ export default function PersonDetails({inputPerson}) {
         updatePerson(person.personId, update);
     } 
 
+
     return (
         <>
         <PersonDetail detailId="personDisplayName" 
                       title=""
                       defaultFieldValue={person.personDisplayName} 
-                      makeUpdate={(value) => ({personDisplayName: value})}
+                      defaultNote={person.personDisplayNameNote}
+                      makeUpdate={(value, note) => ({personDisplayName: value, personDisplayNameNote: note})}
                       applyUpdate={handleUpdate}
                       textVariant='h5'
                       validate={(value) => (value.length < 2 ? "Please enter at least two charachters": null)}/> 
 
-        <PersonDetail detailId="dateOfBith" 
+        <PersonDetail detailId="dateOfBirth" 
                       title="Date of Birth"
                       defaultFieldValue={person.birth && formatAdvancedDate(person.birth.date)}
-                      makeUpdate={(value) => ({
+                      defaultNote={person.birth && person.birth.dateNote}
+                      makeUpdate={(value, note) => ({
                         'birth': {
-                            'date': parseAdvancedDate(value)
+                            'date': parseAdvancedDate(value),
+                            'dateNote': note
                         }
-                    })}
-                    applyUpdate={handleUpdate}
-
+                        })}
+                        applyUpdate={handleUpdate}
                         validate={(value) => (parseAdvancedDate(value) || value.trim().length == 0 ? null : "Invalid date format.")}
                      /> 
         
         <PersonDetail detailId="placeOfBirth"
                       title="Birth place"
                       defaultFieldValue={birthPlace}
-                      makeUpdate={(value) => ({
-                        'birth': {'place': {'displayName': value}}
+                      defaultNote={person.birth && person.birth.placeNote}
+                      makeUpdate={(value, note) => ({
+                        'birth': {'place': {'displayName': value}, 'placeNote': note}
                       })}
                       applyUpdate={handleUpdate}
 
@@ -61,7 +65,6 @@ export default function PersonDetails({inputPerson}) {
                              defaultFieldValue={person.isAlive}
                              makeUpdate={(value) => ({isAlive: value})} 
                              applyUpdate={handleUpdate}
-
                              />
 
         {
@@ -70,9 +73,11 @@ export default function PersonDetails({inputPerson}) {
             <PersonDetail detailId="dateOfDeath" 
                         title="Date of Death"
                         defaultFieldValue={person.death && formatAdvancedDate(person.death.date)}
-                        makeUpdate={(value) => ({
+                        defaultNote={person.death && person.death.dateNote}
+                        makeUpdate={(value, note) => ({
                             'death': {
-                                'date': parseAdvancedDate(value)
+                                'date': parseAdvancedDate(value),
+                                'dateNote': note
                             }
                         })}
                         applyUpdate={handleUpdate}
@@ -88,12 +93,11 @@ export default function PersonDetails({inputPerson}) {
             <PersonDetail detailId="placeOfDeath"
                           title="Death place"
                           defaultFieldValue={deathPlace}
-                          makeUpdate={(value) => ({
-              'death': {'place': {'displayName': value}}
-            })}
-            applyUpdate={handleUpdate}
-
-            />
+                          defaultNote={person.death && person.death.placeNote}
+                          makeUpdate={(value, note) => ({
+                            'death': {'place': {'displayName': value}, 'note': note}
+                          })}
+                          applyUpdate={handleUpdate}/>
 
         }
         
@@ -103,9 +107,6 @@ export default function PersonDetails({inputPerson}) {
                                  choices={['female', 'male', 'other']}
                                  applyUpdate={handleUpdate}
                                  makeUpdate={(value) => ({gender: value})}/>
-
-
-
 
     </>
     )

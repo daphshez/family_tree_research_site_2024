@@ -6,9 +6,10 @@ from bson import ObjectId
 from flask import Blueprint, request
 from mongoengine import Q
 
-from familyresearch.models import Person, AdvancedDate, ResearchProject, ResearchNote, get_gender_value, Relationship, \
-    get_date_qualifier_value
+from familyresearch.models import (Person, AdvancedDate, ResearchProject, ResearchNote, get_gender_value, Relationship,
+    get_date_qualifier_value, PersonLink)
 import re
+import shortuuid
 
 endpoints = Blueprint('endpoints', __name__)
 
@@ -180,7 +181,7 @@ def render_people_for_list(query):
             })
             for person in query
         ]
-    people.sort(key=lambda p: p['personDisplayName'])
+    people.sort(key=lambda p: (p['personDisplayName'].split(" ")[-1], p['personDisplayName']))
     return {'people': people}
 
 
@@ -243,28 +244,39 @@ def get_person(person_id):
         for project in ResearchProject.objects(id__in=notes_by_project.keys())
     ]
 
-
     return deep_remove_empty_values({
         'personId': str(person.id),
         'personDisplayName': person.display_name,
+        'personDisplayNameNote': person.display_name_note,
         'birth': {
             'date': render_advanced_date(person.birth_date),
+            'dateNote': person.birth_date.note,
             'place': {
                 'displayName': person.birth_place.display_name,
-            } if person.birth_place else {}
+            } if person.birth_place else {},
+            'placeNote': person.birth_place.note if person.birth_place else None,
         },
         'isAlive': format_is_alive(person.is_alive),
         'death': {
             'date': render_advanced_date(person.death_date),
+            'dateNote': person.death_date.note,
             'place': {
                 'displayName': person.death_place.display_name,
             } if person.death_place else {},
+            'placeNote': person.death_place.note if person.death_place else None,
         },
         'gender': person.get_gender_display(),
         'created': person.created.isoformat(),
         'lastUpdate': person.last_update.isoformat(),
         'relations': relations,
-        'projects': projects
+        'projects': projects,
+        'links': [
+            {
+                'id': link.id,
+                'url': link.url,
+                'description': link.description
+            } for link in person.links
+        ]
     })
 
 
@@ -281,8 +293,12 @@ def update_person(person_id):
             update['set__birth_date__year'] = d['birth']['date'].get('year')
             if 'qualifier' in d['birth']['date']:
                 update['set__birth_date__qualifier'] = get_date_qualifier_value(d['birth']['date']['qualifier'])
+        if 'dateNote' in d['birth']:
+            update['set__birth_date__note'] = d['birth']['dateNote']
         if 'place' in d['birth']:
             update['set__birth_place__display_name'] = d['birth']['place']['displayName']
+        if 'placeNote' in d['birth']:
+            update['set__birth_place__note'] = d['birth']['placeNote']
     if 'isAlive' in d:
         update['set__is_alive'] = parse_is_alive(d['isAlive'])
     if 'death' in d:
@@ -292,8 +308,12 @@ def update_person(person_id):
             update['set__death_date__year'] = d['death']['date'].get('year')
             if 'qualifier' in d['death']['date']:
                 update['set__death_date__qualifier'] = get_date_qualifier_value(d['death']['date']['qualifier'])
+            if 'dateNote' in d['death']:
+                update['set__death_date__note'] = d['death']['dateNote']
         if 'place' in d['death']:
             update['set__death_place__display_name'] = d['death']['place']['displayName']
+        if 'placeNote' in d['death']:
+            update['set__death_place__note'] = d['death']['placeNote']
     if 'gender' in d:
         update['set__gender'] = get_gender_value(d['gender'])
 
@@ -337,3 +357,24 @@ def search_people():
         query = query.limit(max_results)
 
     return render_people_for_list(query)
+
+
+@endpoints.post('/people/<person_id>/links/add')
+def add_links(person_id):
+    d = request.json
+    url = d['url']
+    description = d['description']
+    Person.objects(id=person_id).modify(links__push=PersonLink(
+        id=shortuuid.uuid(),
+        url=url,
+        description=description
+    ))
+    return {}, 204
+
+
+@endpoints.delete('/people/<person_id>/links/<link_id>')
+def remove_link(person_id, link_id):
+    Person.objects(id=person_id).modify(__raw__={
+        '$pull': { 'links.id': link_id}
+    })
+    return {}, 204
