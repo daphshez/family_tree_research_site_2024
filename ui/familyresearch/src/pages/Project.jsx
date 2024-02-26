@@ -13,9 +13,10 @@ function NoteCard({note}) {
                     </CustomMarkdown>
                 
             </CardContent>
-            <CardActions sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+            <CardActions sx={{ display: 'flex', alignItems: 'center'}}>
                     <Button component={Link} to={`notes/${note.noteId}`}>Edit</Button>
-                    <Typography variant="body2" color="text.secondary">Created {note.created}<br/>Updated {note.lastUpdate}</Typography>
+                    <Button component={Link} to={`notes/${note.noteId}?view`}>View</Button>
+                    <Typography variant="body2" color="text.secondary" sx={{marginLeft: "auto!important"}}>Created {note.created}<br/>Updated {note.lastUpdate}</Typography>
             </CardActions>
         </Card>
     )

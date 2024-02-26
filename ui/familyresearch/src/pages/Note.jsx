@@ -1,15 +1,17 @@
 import { useState, useRef, useEffect } from "react";
 import { getNote, updateNote, createNewNote, fullDisplayName, searchPeople } from "../backend";
-import { useLoaderData, Form, redirect, useParams } from "react-router-dom";
+import { useLoaderData, Form, useSearchParams, useParams, redirect } from "react-router-dom";
 import CustomMarkdown from "../components/CustomMarkdown";
 import { TextField, Paper, Button, Typography, Box, Link as MuiLink } from "@mui/material";
 import { Link } from "react-router-dom";
 
-function PreviewCard({content}) {
+function PreviewCard({content, preview, projectId}) {
     return (
-        <Paper elevation={3} sx={{ minWidth: 400, marginTop: '30px', padding: '10px' }}>
-            <Typography variant="caption">Preview</Typography><br/>
+        <Paper elevation={3} sx={{ minWidth: 400, padding: '10px' }}>
+            { preview && <><Typography variant="caption">Preview</Typography><br/></> }
             <CustomMarkdown>{content }</CustomMarkdown>
+            { !preview && <Button component={Link} to="">Edit</Button>}
+            { !preview && <Button component={Link} to={`/projects/${projectId}`}>Back to project</Button>}
         </Paper>
     )
 }
@@ -19,6 +21,10 @@ export default function NotePage()
 {
     const params = useParams();
     const projectId = params.projectId;
+
+    const [query] = useSearchParams();
+    const edit = !query.has("view");
+
 
     let defaultContent = "";
     if (params.noteId) {
@@ -104,12 +110,13 @@ export default function NotePage()
     return (
         <>
 
-        <Paper>
+        { edit && (
+        <Paper sx={{ marginBottom: "30px"}}>
         <Form method="post" >
             <TextField 
               multiline
               fullWidth
-              rows={15}
+              rows={25}
               variant="filled" 
               label="Markdown"
               required
@@ -131,16 +138,14 @@ export default function NotePage()
             ) }
             </Box>
             <Button type="submit">Save</Button>
-            <Button component={Link} to={`/projects/${projectId}`}>Cancel</Button>
         </Form>
-        </Paper>
-
+        </Paper>)
+    }
       
+        <PreviewCard content={note.content} preview={edit} projectId={params.projectId}/>
 
-        <PreviewCard content={note.content}/>
 
-        {/* {searching && <NameAutocomplete onSelect={onNameAutocompleteSelect}/>} */}
-        
+
 
         </>
     )
@@ -157,6 +162,5 @@ export async function action({request, params}) {
         updateNote(params.projectId, params.noteId, noteContent);
     else 
         createNewNote(params.projectId, noteContent);
-    return redirect (`/projects/${params.projectId}`);
-
+    return redirect (`/projects/${params.projectId}/notes/${params.noteId}?view`);
 }

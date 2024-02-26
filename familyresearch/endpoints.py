@@ -250,7 +250,7 @@ def get_person(person_id):
         'personDisplayNameNote': person.display_name_note,
         'birth': {
             'date': render_advanced_date(person.birth_date),
-            'dateNote': person.birth_date.note,
+            'dateNote': person.birth_date.note if person.birth_date else None,
             'place': {
                 'displayName': person.birth_place.display_name,
             } if person.birth_place else {},
@@ -259,7 +259,7 @@ def get_person(person_id):
         'isAlive': format_is_alive(person.is_alive),
         'death': {
             'date': render_advanced_date(person.death_date),
-            'dateNote': person.death_date.note,
+            'dateNote': person.death_date.note if person.death_date else None,
             'place': {
                 'displayName': person.death_place.display_name,
             } if person.death_place else {},
@@ -272,11 +272,13 @@ def get_person(person_id):
         'projects': projects,
         'links': [
             {
-                'id': link.id,
+                'linkId': link.id,
                 'url': link.url,
                 'description': link.description
             } for link in person.links
-        ]
+
+        ],
+        'overviewNote': person.overview_note
     })
 
 
@@ -316,6 +318,8 @@ def update_person(person_id):
             update['set__death_place__note'] = d['death']['placeNote']
     if 'gender' in d:
         update['set__gender'] = get_gender_value(d['gender'])
+    if 'overviewNote' in d:
+        update['set__overview_note'] = d['overviewNote']
 
     print(d)
     print(update)
@@ -364,17 +368,23 @@ def add_links(person_id):
     d = request.json
     url = d['url']
     description = d['description']
-    Person.objects(id=person_id).modify(links__push=PersonLink(
-        id=shortuuid.uuid(),
+    link_id = shortuuid.uuid()
+    Person.objects(id=person_id).modify(push__links=PersonLink(
+        id=link_id,
         url=url,
         description=description
     ))
-    return {}, 204
+    return { 'linkId': link_id}
 
 
 @endpoints.delete('/people/<person_id>/links/<link_id>')
 def remove_link(person_id, link_id):
-    Person.objects(id=person_id).modify(__raw__={
-        '$pull': { 'links.id': link_id}
+    # todo: make it work with modify...
+    r = Person.objects(id=person_id).modify(__raw__={
+        '$pull': { 'links': {'id': link_id}}
     })
+    # print(link_id)
+    # person = Person.objects(id=person_id).get()
+    # person.links = [link for link in person.links if link.id != link_id]
+    # person.save()
     return {}, 204

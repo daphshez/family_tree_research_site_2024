@@ -5,6 +5,7 @@ import MainNavigation from '../components/MainNavigation';
 import Container from '@mui/material/Container'
 import { getUser } from '../utils';
 import LoginPage from './Login';
+import ScrollToTop from '../components/ScrollToTop';
 
 export default function RootLayout() {
   const user = useLoaderData();
@@ -17,6 +18,8 @@ export default function RootLayout() {
 
   if (user) {
     return (
+      <>
+      <ScrollToTop />
       <Container>
         <MainNavigation user={user} />
         <main>
@@ -25,6 +28,7 @@ export default function RootLayout() {
           </Container>
         </main>
       </Container>
+      </>
     );
   } else {
     return <LoginPage/>

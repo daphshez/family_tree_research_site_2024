@@ -5,6 +5,7 @@ import PersonMultiselectDetail from './PersonMultiselectDetail';
 import { formatAdvancedDate, parseAdvancedDate } from '../advanced-dates';
 import { mergeDeep } from '../utils'
 import { updatePerson } from "../backend"
+import OverviewNote from './OverviewNote';
 
 
 export default function PersonDetails({inputPerson}) {
@@ -107,6 +108,8 @@ export default function PersonDetails({inputPerson}) {
                                  choices={['female', 'male', 'other']}
                                  applyUpdate={handleUpdate}
                                  makeUpdate={(value) => ({gender: value})}/>
+
+        <OverviewNote content={person.overviewNote} applyUpdate={handleUpdate}/>
 
     </>
     )

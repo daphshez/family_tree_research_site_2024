@@ -74,7 +74,9 @@ class Person(db.Document):
 
     related_people = db.EmbeddedDocumentListField(RelatedPerson)
 
-    links = db.EmbeddedDocumentListField(RelatedPerson)
+    links = db.EmbeddedDocumentListField(PersonLink)
+
+    overview_note = db.StringField()
 
 
 class Relationship(db.Document):

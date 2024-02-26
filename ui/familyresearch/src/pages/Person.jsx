@@ -3,7 +3,9 @@ import { getPerson, fullDisplayName } from '../backend';
 import PersonDetails from '../components/PersonDetails';
 import RelatedPeople from '../components/RelatedPeople';
 import PersonProjects from '../components/PersonProjects';
-import { Box } from '@mui/material';
+import PersonLinks from '../components/PersonLinks';
+import { Box, Typography } from '@mui/material';
+import OverviewNote from '../components/OverviewNote';
 
 
 export default function PersonPage() {
@@ -16,6 +18,7 @@ export default function PersonPage() {
             flexDirection: 'column'
         }}>
         <PersonDetails inputPerson={person}/>
+        <PersonLinks person={person}/>
         <RelatedPeople person={person}/>
         <PersonProjects person={person}/>
 

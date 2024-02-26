@@ -258,3 +258,35 @@ export async function deleteRelationships(person1, person2) {
       throw new Error('Failed to fetch places');
     }
 }
+
+export async function addLink(personId, url, description) {
+    const response = await fetch(`${serverLocation}/api/people/${personId}/links/add`, {
+        method: 'POST',
+        body: JSON.stringify({url, description}),
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+
+    const resData = await response.json();
+    
+  
+    if (!response.ok) {
+      throw new Error('Failed to fetch places');
+    }
+
+    return resData.linkId;
+}
+
+export async function removeLink(personId, linkId) {
+    const response = await fetch(`${serverLocation}/api/people/${personId}/links/${linkId}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+  
+    if (!response.ok) {
+      throw new Error('Failed to fetch places');
+    }
+}

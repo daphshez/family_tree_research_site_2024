@@ -68,7 +68,7 @@ export default function PersonDetail({detailId,
                     id={detailId} 
                     label={title}
                     value={fieldValue} 
-                    onChange={(event) => setFieldValue(event.target.value.trim())}
+                    onChange={(event) => setFieldValue(event.target.value)}
                     sx={{ marginBottom: '10px'}}/>
 
                     <FormControl fullWidth>
@@ -99,7 +99,7 @@ export default function PersonDetail({detailId,
                     <Typography variant={textVariant}>{ sanitisedDefault }</Typography>
                     </Box>
                 </Box>
-                <Typography variant="body2" component="p" sx={{marginLeft: '34px'}}>
+                <Typography variant="body2" component="p" sx={{marginLeft: '34px', whiteSpace: 'pre-wrap'}}>
                     { sanitisedNote }
                 </Typography>
             </Box>

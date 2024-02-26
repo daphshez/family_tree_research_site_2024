@@ -76,12 +76,7 @@ export default function RelatedPeople({ person }) {
           open={isAddRelationFormOpen} 
           applyUpdate={addRelation}
           handleClose={() => setAddRelationFormOpen(false)}/>
-    
-        {/* <AddRelationForm 
-        personId={person.personId}
-        currentRelations={relations.map((relation) => relation.personId)}
-        
-        /> */}
+
        
     </Box>
     )
