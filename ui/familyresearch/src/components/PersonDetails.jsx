@@ -24,7 +24,6 @@ export default function PersonDetails({inputPerson}) {
         updatePerson(person.personId, update);
     } 
 
-
     return (
         <>
         <PersonDetail detailId="personDisplayName" 
@@ -101,6 +100,21 @@ export default function PersonDetails({inputPerson}) {
                           applyUpdate={handleUpdate}/>
 
         }
+
+        {
+            person.isAlive === 'no' && 
+
+
+            <PersonDetail detailId="causeOfDeath"
+                          title="Cause of death"
+                          defaultFieldValue={person.death && person.death.cause}
+                          defaultNote={person.death && person.death.causeNote}
+                          makeUpdate={(value, note) => ({
+                            'death': {'cause': value.trim(), 'note': note}
+                          })}
+                          applyUpdate={handleUpdate}/>
+
+        }
         
         <PersonMultiselectDetail detailId="gender"
                                  title="Gender"
@@ -110,6 +124,13 @@ export default function PersonDetails({inputPerson}) {
                                  makeUpdate={(value) => ({gender: value})}/>
 
         <OverviewNote content={person.overviewNote} applyUpdate={handleUpdate}/>
+
+        <PersonMultiselectDetail detailId="researchTag"
+                                 title="Research Tag"
+                                 defaultFieldValue={person.researchTag && person.researchTag.value}
+                                 choices={['undocumented', 'horizon']}
+                                 applyUpdate={handleUpdate}
+                                 makeUpdate={(value) => ({researchTag: {'value': value}})}/>
 
     </>
     )

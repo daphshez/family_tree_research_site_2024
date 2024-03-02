@@ -5,9 +5,11 @@ from typing import Optional
 from bson import ObjectId
 from flask import Blueprint, request
 from mongoengine import Q
+from werkzeug.exceptions import BadRequest
 
+from familyresearch.family_relationships import add_other_parent, infer_siblings
 from familyresearch.models import (Person, AdvancedDate, ResearchProject, ResearchNote, get_gender_value, Relationship,
-    get_date_qualifier_value, PersonLink)
+                                   get_date_qualifier_value, PersonLink, role_choices)
 import re
 import shortuuid
 
@@ -105,7 +107,7 @@ def list_projects():
 @endpoints.get('/projects/<project_id>')
 def get_project(project_id):
     project = ResearchProject.objects(id=project_id).get()
-    project_notes = ResearchNote.objects(research_project=project_id)
+    project_notes = ResearchNote.objects(research_project=project_id).order_by('-sticky', '-last_update')
     return {
         'projectId': str(project.id),
         'projectDisplayName': project.name,
@@ -124,9 +126,11 @@ def get_project(project_id):
 def create_note(project_id):
     d = request.json
     note_content = d['content']
+    sticky = d.get('sticky', False)
     note = ResearchNote(
         research_project=project_id,
         content=note_content,
+        sticky=sticky,
         people=find_people(note_content)
     ).save()
     return {
@@ -138,10 +142,12 @@ def create_note(project_id):
 def update_note(project_id, note_id):
     d = request.json
     note_content = d['content']
+    sticky = d.get('sticky', False)
     ResearchNote.objects(id=note_id).modify(content=note_content,
+                                            sticky=sticky,
                                             people=find_people(note_content),
                                             last_update=datetime.datetime.utcnow())
-    return {}, 204
+    return {}
 
 
 @endpoints.get('/projects/<project_id>/notes/<note_id>')
@@ -151,7 +157,8 @@ def get_note(project_id, note_id):
         'noteId': str(note.id),
         'content': note.content,
         'created': note.created.isoformat(),
-        'lastUpdate': note.last_update.isoformat()
+        'lastUpdate': note.last_update.isoformat(),
+        'sticky': note.sticky
     }
 
 
@@ -168,19 +175,19 @@ def render_advanced_date(advanced_date: AdvancedDate):
 
 def render_people_for_list(query):
     people = [
-            deep_remove_empty_values({
-                'personId': str(person.id),
-                'personDisplayName': person.display_name,
-                'birth': {
-                    'date': render_advanced_date(person.birth_date)
-                },
-                'isAlive': format_is_alive(person.is_alive),
-                'death': {
-                    'date': render_advanced_date(person.death_date),
-                }
-            })
-            for person in query
-        ]
+        deep_remove_empty_values({
+            'personId': str(person.id),
+            'personDisplayName': person.display_name,
+            'birth': {
+                'date': render_advanced_date(person.birth_date)
+            },
+            'isAlive': format_is_alive(person.is_alive),
+            'death': {
+                'date': render_advanced_date(person.death_date),
+            }
+        })
+        for person in query
+    ]
     people.sort(key=lambda p: (p['personDisplayName'].split(" ")[-1], p['personDisplayName']))
     return {'people': people}
 
@@ -208,14 +215,17 @@ def get_person(person_id):
         if r == 'child': return 'parent'
         return r
 
+    relations_docs = Relationship.objects(Q(person1=person_id) | Q(person2=person_id))
+
     relations = [
         {
             'personId': str(r.person1.id) if str(r.person2.id) == person_id else str(r.person2.id),
             'otherPersonRole': reverse_role(r.person2_role) if str(r.person2.id) == person_id else r.person2_role,
             'relationshipOption': r.relationship_option
-        } for r in
-        Relationship.objects(Q(person1=person_id) | Q(person2=person_id))
+        } for r in relations_docs
     ]
+
+    relations += infer_siblings(person_id, relations_docs)
 
     required_ids = {person_id} | {p['personId'] for p in relations}
     people = {str(person.id): person for person in Person.objects(id__in=required_ids)}
@@ -264,6 +274,8 @@ def get_person(person_id):
                 'displayName': person.death_place.display_name,
             } if person.death_place else {},
             'placeNote': person.death_place.note if person.death_place else None,
+            'cause': person.cause_of_death,
+            'causeNote': person.cause_of_death_note
         },
         'gender': person.get_gender_display(),
         'created': person.created.isoformat(),
@@ -278,13 +290,19 @@ def get_person(person_id):
             } for link in person.links
 
         ],
-        'overviewNote': person.overview_note
+        'overviewNote': person.overview_note,
+        'researchTag': {
+            'value': person.research_tag,
+            'note': person.research_tag_note,
+            'lastUpdate': person.research_tag_last_update.isoformat()
+        } if person.research_tag else None
     })
 
 
 @endpoints.post('/people/<person_id>')
 def update_person(person_id):
     d = request.json
+    print(d)
     update = {}
     if 'personDisplayName' in d:
         update['set__display_name'] = d['personDisplayName']
@@ -316,13 +334,23 @@ def update_person(person_id):
             update['set__death_place__display_name'] = d['death']['place']['displayName']
         if 'placeNote' in d['death']:
             update['set__death_place__note'] = d['death']['placeNote']
+        if 'cause' in d['death']:
+            update['set__cause_of_death'] = d['death']['cause']
+        if 'causeNote' in d['death']:
+            update['set__cause_of_death_note'] = d['death']['causeNote']
     if 'gender' in d:
         update['set__gender'] = get_gender_value(d['gender'])
     if 'overviewNote' in d:
         update['set__overview_note'] = d['overviewNote']
+    if 'researchTag' in d:
+        update['set__research_tag'] = d['researchTag']['value']
+        update['set__research_tag_note'] = d['researchTag'].get('note')
+        update['set__research_tag_last_update'] = datetime.datetime.utcnow()
 
-    print(d)
+    update['set__last_update'] = datetime.datetime.utcnow()
+
     print(update)
+
     Person.objects(id=person_id).modify(**update)
 
     return {}
@@ -331,15 +359,26 @@ def update_person(person_id):
 @endpoints.post('/people/relations')
 def add_relationship():
     d = request.json
-    Relationship(person1=d['personId'],
-                 person2=d['otherPersonId'],
-                 person2_role=d['otherPersonRole'],
-                 relationship_option=d['relationshipOption']).save()
-    return {}, 204
+    person1, person2, role, options = (d['personId'], d['otherPersonId'], d['otherPersonRole'], d['relationshipOption'])
+    if role not in role_choices + ['child']:
+        raise BadRequest()
+    if role == 'child':
+        role = 'parent'
+        person1, person2 = person2, person1
+
+    Relationship(person1=person1,
+                 person2=person2,
+                 person2_role=role,
+                 relationship_option=options).save()
+
+    if role == 'parent':
+        add_other_parent(person2, person1, options)
+
+    return {}
 
 
 @endpoints.delete('/people/relations')
-def add_relationships():
+def delete_relationships():
     d = request.json
     person1 = ObjectId(d['person1'])
     person2 = ObjectId(d['person2'])
@@ -374,14 +413,14 @@ def add_links(person_id):
         url=url,
         description=description
     ))
-    return { 'linkId': link_id}
+    return {'linkId': link_id}
 
 
 @endpoints.delete('/people/<person_id>/links/<link_id>')
 def remove_link(person_id, link_id):
     # todo: make it work with modify...
     r = Person.objects(id=person_id).modify(__raw__={
-        '$pull': { 'links': {'id': link_id}}
+        '$pull': {'links': {'id': link_id}}
     })
     # print(link_id)
     # person = Person.objects(id=person_id).get()

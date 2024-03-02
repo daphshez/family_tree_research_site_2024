@@ -3,8 +3,17 @@ import datetime
 
 gender_choices = ((0, 'female'), (1, 'male'), (2, 'other'))
 
+role_choices = ['parent', 'partner', 'sibling']
+
+research_tags_choices = {
+    'undocumented': 'No solid evidence found yet for the existence of this person or the family connections',
+    'horizon': 'family members information fully or partially missing'
+}
+
 
 def get_choice_value(s, choices):
+    if s == 'unknown':
+        return None
     return next(pair for pair in choices if pair[1] == s)[0]
 
 
@@ -69,6 +78,8 @@ class Person(db.Document):
     is_alive = db.BooleanField()
     death_date = db.EmbeddedDocumentField(AdvancedDate)
     death_place = db.EmbeddedDocumentField(Place)
+    cause_of_death = db.StringField()
+    cause_of_death_note = db.StringField()
 
     gender = db.IntField(choices=gender_choices)
 
@@ -78,11 +89,15 @@ class Person(db.Document):
 
     overview_note = db.StringField()
 
+    research_tag = db.StringField(choices=research_tags_choices.keys())
+    research_tag_note = db.StringField()
+    research_tag_last_update = db.DateTimeField()
+
 
 class Relationship(db.Document):
     person1 = db.LazyReferenceField(Person)
     person2 = db.LazyReferenceField(Person)
-    person2_role = db.StringField()  # choices?
+    person2_role = db.StringField(choice=role_choices)
     relationship_option = db.StringField()
     created = db.DateTimeField(default=datetime.datetime.utcnow)
 
@@ -92,5 +107,5 @@ class ResearchNote(db.Document):
     created = db.DateTimeField(default=datetime.datetime.utcnow)
     last_update = db.DateTimeField(default=datetime.datetime.utcnow)
     people = db.ListField(db.LazyReferenceField(Person))
-
+    sticky = db.BooleanField(default=False)
     content = db.StringField()

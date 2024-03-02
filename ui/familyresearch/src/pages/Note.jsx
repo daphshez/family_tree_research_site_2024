@@ -4,6 +4,8 @@ import { useLoaderData, Form, useSearchParams, useParams, redirect } from "react
 import CustomMarkdown from "../components/CustomMarkdown";
 import { TextField, Paper, Button, Typography, Box, Link as MuiLink } from "@mui/material";
 import { Link } from "react-router-dom";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import Checkbox from "@mui/material/Checkbox";
 
 function PreviewCard({content, preview, projectId}) {
     return (
@@ -27,9 +29,11 @@ export default function NotePage()
 
 
     let defaultContent = "";
+    let defaultSticky = false;
     if (params.noteId) {
         const savedNote = useLoaderData();
         defaultContent = savedNote.content;
+        defaultSticky = savedNote.sticky;
     } 
     const [note, setNote] = useState({
       content: defaultContent,
@@ -137,6 +141,7 @@ export default function NotePage()
                               sx={{paddingRight: '10px', cursor: 'pointer'}}>@{fullDisplayName(person)}</MuiLink>
             ) }
             </Box>
+            <FormControlLabel name="sticky" control={<Checkbox defaultChecked={defaultSticky} />} label="Sticky" sx={{ display: 'block', padding: '8px' }} />
             <Button type="submit">Save</Button>
         </Form>
         </Paper>)
@@ -158,9 +163,13 @@ export function loader({request, params}) {
 export async function action({request, params}) {
     const formData = await request.formData();
     const noteContent = formData.get("noteContent");
-    if (params.noteId)
-        updateNote(params.projectId, params.noteId, noteContent);
-    else 
-        createNewNote(params.projectId, noteContent);
-    return redirect (`/projects/${params.projectId}/notes/${params.noteId}?view`);
+    const sticky = formData.get("sticky") == "on";
+    if (params.noteId) {
+        updateNote(params.projectId, params.noteId, noteContent, sticky);
+        return redirect (`/projects/${params.projectId}/notes/${params.noteId}?view`);
+    }
+    else {
+        const noteId = await createNewNote(params.projectId, noteContent, sticky);
+        return redirect (`/projects/${params.projectId}/notes/${noteId}?view`);
+    }
 }

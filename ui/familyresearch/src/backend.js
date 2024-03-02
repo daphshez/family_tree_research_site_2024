@@ -100,10 +100,10 @@ export async function getProject(projectId) {
     return resData;
 }
 
-export async function createNewNote(projectId, content) {
+export async function createNewNote(projectId, content, sticky) {
     const response = await fetch(`${serverLocation}/api/projects/${projectId}/notes/create`, {
         method: 'PUT',
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({ content, sticky }),
         headers: {
             'Content-Type': 'application/json',
         },
@@ -133,10 +133,10 @@ export async function getNote(projectId, noteId) {
 }
 
 
-export async function updateNote(projectId, noteId, content) {
+export async function updateNote(projectId, noteId, content, sticky) {
     const response = await fetch(`${serverLocation}/api/projects/${projectId}/notes/${noteId}`, {
         method: 'POST',
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({ content, sticky }),
         headers: {
             'Content-Type': 'application/json',
         },

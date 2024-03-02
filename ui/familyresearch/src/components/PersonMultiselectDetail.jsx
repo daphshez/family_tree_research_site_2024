@@ -16,30 +16,40 @@ export default function PersonMultiselectDetail({detailId,
         applyUpdate(makeUpdate(newValue));
     }
 
+    let choicesMap = null;
+    if (Array.isArray(choices)) {
+        choicesMap = {};
+        choices.forEach(choice => {
+            choicesMap[choice] = choice; 
+        });
+    } else {
+        choicesMap = choices;
+    }
+    
 
-        return (
-            <Box sx={{
-                marginBottom: '20px'
-            }}>
-                <InputLabel htmlFor={detailId}>{ title }</InputLabel> 
 
-                <ToggleButtonGroup
-                    name={detailId}
-                    value={fieldValue}
-                    exclusive
-                    onChange={handleEdit}
-                >
-                {
-                    choices.map((choice)=>(
-                        <ToggleButton key={choice} value={choice}>
-                            {choice}
-                        </ToggleButton>
+    return (
+        <Box sx={{
+            marginBottom: '20px'
+        }}>
+            <InputLabel htmlFor={detailId}>{ title }</InputLabel> 
 
-                    ))
-                }
-                <ToggleButton value="unknown"><QuestionMarkIcon/></ToggleButton>
-                </ToggleButtonGroup>
-        </Box>);
+            <ToggleButtonGroup
+                name={detailId}
+                value={fieldValue}
+                exclusive
+                onChange={handleEdit}
+            >
+            <ToggleButton value="unknown"><QuestionMarkIcon/></ToggleButton>
+            {
+                Object.keys(choicesMap).map((choice) => (
+                    <ToggleButton key={choice} value={choice}>
+                         { choicesMap[choice] }
+                    </ToggleButton>
+                ))
+            }
+            </ToggleButtonGroup>
+    </Box>);
    
     
 

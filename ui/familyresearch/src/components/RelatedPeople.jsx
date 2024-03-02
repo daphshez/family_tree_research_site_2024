@@ -54,11 +54,12 @@ export default function RelatedPeople({ person }) {
                 <ListItem 
                     disablePadding key={other.personId}
                     secondaryAction={
-                         <Button color="error" variant="text" size="small" onClick={()=>removeRelation(other.personId)}><RemoveCircleOutlineSharpIcon/></Button>   
+                        other.inferred ? null : 
+                        <Button color="error" variant="text" size="small" onClick={()=>removeRelation(other.personId)}><RemoveCircleOutlineSharpIcon/></Button>   
                     }>
                         <ListItemButton 
                            component={Link} 
-                           to={`/people/${other.personId}`}>{other.personDisplayName} ({other.otherPersonRole})
+                           to={`/people/${other.personId}`}>{other.personDisplayName} ({other.otherPersonRole}) 
                         </ListItemButton>
                 </ListItem>
                    
