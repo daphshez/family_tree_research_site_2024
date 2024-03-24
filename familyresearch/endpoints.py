@@ -9,7 +9,7 @@ from werkzeug.exceptions import BadRequest
 
 from familyresearch.family_relationships import add_other_parent, infer_siblings
 from familyresearch.models import (Person, AdvancedDate, ResearchProject, ResearchNote, get_gender_value, Relationship,
-                                   get_date_qualifier_value, PersonLink, role_choices)
+                                   get_date_qualifier_value, PersonLink, role_choices, ResearchTask)
 import re
 import shortuuid
 
@@ -87,18 +87,18 @@ def create_project():
 
 @endpoints.get('/projects')
 def list_projects():
-    note_count_pipeline = [
+    count_pipeline = [
         {"$group": {"_id": "$research_project", "count": {"$sum": 1}}},
     ]
-    docs = ResearchNote.objects().aggregate(note_count_pipeline)
-    counts = {doc['_id']: doc['count'] for doc in docs}
-
+    note_counts = {doc['_id']: doc['count'] for doc in ResearchNote.objects().aggregate(count_pipeline)}
+    task_counts = {doc['_id']: doc['count'] for doc in ResearchTask.objects().aggregate(count_pipeline)}
     return {
         'projects': [
             {
                 'projectId': str(project.id),
                 'projectDisplayName': project.name,
-                'nNotes': counts.get(project.id, 0)
+                'nNotes': note_counts.get(project.id, 0),
+                'nTasks': task_counts.get(project.id, 0)
             } for project in ResearchProject.objects()
         ]
     }
@@ -131,7 +131,7 @@ def create_note(project_id):
         research_project=project_id,
         content=note_content,
         sticky=sticky,
-        people=find_people(note_content)
+        people=find_people(note_content),
     ).save()
     return {
         'noteId': str(note.id)
@@ -173,21 +173,22 @@ def render_advanced_date(advanced_date: AdvancedDate):
     }
 
 
+def render_a_person_for_list(person: Person):
+    return deep_remove_empty_values({
+        'personId': str(person.id),
+        'personDisplayName': person.display_name,
+        'birth': {
+            'date': render_advanced_date(person.birth_date)
+        },
+        'isAlive': format_is_alive(person.is_alive),
+        'death': {
+            'date': render_advanced_date(person.death_date),
+        }
+    })
+
+
 def render_people_for_list(query):
-    people = [
-        deep_remove_empty_values({
-            'personId': str(person.id),
-            'personDisplayName': person.display_name,
-            'birth': {
-                'date': render_advanced_date(person.birth_date)
-            },
-            'isAlive': format_is_alive(person.is_alive),
-            'death': {
-                'date': render_advanced_date(person.death_date),
-            }
-        })
-        for person in query
-    ]
+    people = [render_a_person_for_list(person) for person in query]
     people.sort(key=lambda p: (p['personDisplayName'].split(" ")[-1], p['personDisplayName']))
     return {'people': people}
 
@@ -254,7 +255,22 @@ def get_person(person_id):
         for project in ResearchProject.objects(id__in=notes_by_project.keys())
     ]
 
-    return deep_remove_empty_values({
+    tasks = [
+        {
+            'taskId': str(task.id),
+            'projectId': str(task.project.id),
+            'task': task.task
+        }
+        for task in ResearchTask.objects(person=person_id).order_by('priority')
+    ]
+
+    if tasks:
+        task_projects = {str(project.id): project.name for project in
+                         ResearchProject.objects(id__in=list({t['projectId'] for t in tasks}))}
+        for t in tasks:
+            t['projectName'] = task_projects[t['projectId']]
+
+    p = deep_remove_empty_values({
         'personId': str(person.id),
         'personDisplayName': person.display_name,
         'personDisplayNameNote': person.display_name_note,
@@ -275,7 +291,8 @@ def get_person(person_id):
             } if person.death_place else {},
             'placeNote': person.death_place.note if person.death_place else None,
             'cause': person.cause_of_death,
-            'causeNote': person.cause_of_death_note
+            'causeNote': person.cause_of_death_note,
+            'burialPlace': person.burial_place
         },
         'gender': person.get_gender_display(),
         'created': person.created.isoformat(),
@@ -291,21 +308,20 @@ def get_person(person_id):
 
         ],
         'overviewNote': person.overview_note,
-        'researchTag': {
-            'value': person.research_tag,
-            'note': person.research_tag_note,
-            'lastUpdate': person.research_tag_last_update.isoformat()
-        } if person.research_tag else None
+        'tasks': tasks
     })
+    print(p)
+    return p
 
 
 @endpoints.post('/people/<person_id>')
 def update_person(person_id):
     d = request.json
-    print(d)
     update = {}
     if 'personDisplayName' in d:
         update['set__display_name'] = d['personDisplayName']
+    if 'personDisplayNameNote' in d:
+        update['set__display_name_note'] = d['personDisplayNameNote']
     if 'birth' in d:
         if 'date' in d['birth']:
             update['set__birth_date__day'] = d['birth']['date'].get('day')
@@ -338,18 +354,14 @@ def update_person(person_id):
             update['set__cause_of_death'] = d['death']['cause']
         if 'causeNote' in d['death']:
             update['set__cause_of_death_note'] = d['death']['causeNote']
+        if 'burialPlace' in d['death']:
+            update['set__burial_place'] = d['death']['burialPlace']
     if 'gender' in d:
         update['set__gender'] = get_gender_value(d['gender'])
     if 'overviewNote' in d:
         update['set__overview_note'] = d['overviewNote']
-    if 'researchTag' in d:
-        update['set__research_tag'] = d['researchTag']['value']
-        update['set__research_tag_note'] = d['researchTag'].get('note')
-        update['set__research_tag_last_update'] = datetime.datetime.utcnow()
 
     update['set__last_update'] = datetime.datetime.utcnow()
-
-    print(update)
 
     Person.objects(id=person_id).modify(**update)
 
@@ -427,3 +439,61 @@ def remove_link(person_id, link_id):
     # person.links = [link for link in person.links if link.id != link_id]
     # person.save()
     return {}, 204
+
+
+@endpoints.get('/projects/<project_id>/tasks')
+def get_tasks(project_id):
+    tasks = ResearchTask.objects(project=project_id).order_by('priority')
+    people_id = list({task.person.id for task in tasks if task.person})
+    people = {person.id: render_a_person_for_list(person) for person in Person.objects(id__in=people_id)}
+    return {
+        'tasks': [
+            deep_remove_empty_values({
+                'taskId': str(task.id),
+                'task': task.task,
+                'person': people[task.person.id] if task.person else None,
+                'priority': task.priority,
+                'created': task.created.isoformat()
+            })
+            for task in tasks
+        ]
+    }
+
+
+@endpoints.post('/projects/<project_id>/tasks')
+def create_task(project_id):
+    d = request.json
+    task = ResearchTask(
+        project=project_id,
+        task=d.get('task'),
+        person=d.get('personId'),
+        note=d.get('noteId')
+    ).save()
+    print("Task created", task)
+    return {'taskId': str(task.id)}
+
+
+@endpoints.put('/projects/<project_id>/tasks/<task_id>')
+def update_task(project_id, task_id):
+    d = request.json
+
+    update = {}
+    if 'personId' in d:
+        update['set__person'] = d['personId']
+    if 'task' in d:
+        update['set__task'] = d['task']
+    if 'noteId' in d:
+        update['set__note'] = d['noteId']
+    if 'priority' in d:
+        update['set__priority'] = d['priority']
+
+    print(update)
+    r = ResearchTask.objects(id=task_id).modify(**update)
+    print(r)
+    return {}
+
+
+@endpoints.delete('/projects/<project_id>/tasks/<task_id>')
+def delete_task(project_id, task_id):
+    ResearchTask.objects(id=task_id).delete()
+    return {}

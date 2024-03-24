@@ -1,3 +1,5 @@
+import time
+
 from familyresearch import db
 import datetime
 
@@ -80,6 +82,7 @@ class Person(db.Document):
     death_place = db.EmbeddedDocumentField(Place)
     cause_of_death = db.StringField()
     cause_of_death_note = db.StringField()
+    burial_place = db.StringField()
 
     gender = db.IntField(choices=gender_choices)
 
@@ -88,10 +91,6 @@ class Person(db.Document):
     links = db.EmbeddedDocumentListField(PersonLink)
 
     overview_note = db.StringField()
-
-    research_tag = db.StringField(choices=research_tags_choices.keys())
-    research_tag_note = db.StringField()
-    research_tag_last_update = db.DateTimeField()
 
 
 class Relationship(db.Document):
@@ -109,3 +108,12 @@ class ResearchNote(db.Document):
     people = db.ListField(db.LazyReferenceField(Person))
     sticky = db.BooleanField(default=False)
     content = db.StringField()
+
+
+class ResearchTask(db.Document):
+    project = db.LazyReferenceField(ResearchProject, required=True)
+    task = db.StringField()
+    person = db.LazyReferenceField(Person)
+    note = db.LazyReferenceField(ResearchNote)
+    priority = db.IntField(default=time.time_ns() // 1000)
+    created = db.DateTimeField(default=datetime.datetime.utcnow)
