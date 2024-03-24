@@ -9,6 +9,7 @@ import ProjectPage, { loader as projectNotesLoader } from './pages/Project.jsx';
 import NotePage, { loader as noteLoader, action as noteAction} from './pages/Note.jsx';
 import LoginPage from "./pages/Login.jsx";
 import { action as loginAction} from './components/LoginForm.jsx';
+import TasksPage, {loader as tasksLoader, action as tasksAction } from './pages/Tasks.jsx';  
 
 import '@fontsource/roboto/300.css';
 import '@fontsource/roboto/400.css';
@@ -21,6 +22,7 @@ const router = createBrowserRouter([
     element: <RootLayout />,
     loader: userLoader,
     action: loginAction,
+    id: "root",
     // errorElement: <ErrorPage />,
     children: [
       { 
@@ -56,6 +58,12 @@ const router = createBrowserRouter([
         path: '/projects/:projectId/createNote',
         element: <NotePage/>,
         action: noteAction
+      },
+      {
+        path: '/projects/:projectId/tasks',
+        element: <TasksPage/>,
+        loader: tasksLoader,
+        action: tasksAction
       }
     ],
     
