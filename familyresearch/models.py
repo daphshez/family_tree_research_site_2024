@@ -62,16 +62,6 @@ class Person(db.Document):
     created = db.DateTimeField(default=datetime.datetime.utcnow)
     last_update = db.DateTimeField(default=datetime.datetime.utcnow)
 
-    class RelatedPerson(db.EmbeddedDocument):
-        other_person = db.ObjectIdField()
-        other_person_display_name = db.StringField()
-        their_role = db.IntField(choices=((1, 'partner'),
-                                          (2, 'parent'),
-                                          (3, 'child')))
-        relationship_type = db.IntField(choices=((1, 'birth'),
-                                                 (2, 'adoptive'),
-                                                 (3, 'step')))
-
     display_name = db.StringField()
     display_name_note = db.StringField()
     birth_date = db.EmbeddedDocumentField(AdvancedDate)
@@ -86,7 +76,7 @@ class Person(db.Document):
 
     gender = db.IntField(choices=gender_choices)
 
-    related_people = db.EmbeddedDocumentListField(RelatedPerson)
+    related_people = db.ListField() # todo: this needs to be removed from all documents
 
     links = db.EmbeddedDocumentListField(PersonLink)
 

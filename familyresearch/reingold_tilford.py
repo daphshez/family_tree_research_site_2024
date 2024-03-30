@@ -1,5 +1,11 @@
 # https:/rachel53461.wordpress.com/tag/reingold-tilford/
 
+# todo: contours output shouldn't include root
+#       contours can be built as part of the recursion rather than re-calculated every time
+#       test 2 now fails
+#     - support for spouses using variable node size
+#     - recentering intermediate nodes doesn't work if they have children ; currently disabled needs fixing
+
 class Node:
     y: int = -1
     mod: int = 0
@@ -75,9 +81,12 @@ class ReingoldTilford:
 
         self.calculate_initial_x(root)
 
-        self.check_all_children_on_screen(root)
+        # self.check_all_children_on_screen(root)
+        self.shift_back_to_zero(root)
 
         self.calculate_final_positions(root, 0)
+
+
 
     def initialise_depth(self, node, depth: int):
         node.y = depth
@@ -95,17 +104,24 @@ class ReingoldTilford:
                 node.x = node.children[0].x
             else:
                 node.x = (node.children[0].x + node.children[-1].x) / 2
+
+            print(f"Node '{node.value}'.x={node.x}")
         else:
             node.x = node.previous_sibling.x + self.node_size + self.sibling_distance
 
+            print(f"Node '{node.value}'.x={node.x}")
+
             # now the fun part.
             if not node.is_leaf():
-                # I think the mod calculated here only centers the children under the parent, but it doesn't move
-                # the parent to ensure the subtrees don't overlap; check_for_conflict will do that bit
+                # calculate how much the children need to be shifted right in order to be centered under the parent,
+                # note that this could be negative, which would be resolved by check_for_conflicts and/or
+                # check_all_children_on_screen
                 if len(node.children) == 1:
                     node.mod = node.x - node.children[0].x
                 else:
                     node.mod = node.x - (node.children[0].x + node.children[-1].x) / 2
+
+                print(f"Node '{node.value}'.mod={node.mod}")
 
                 self.check_for_conflicts(node)
 
@@ -123,13 +139,15 @@ class ReingoldTilford:
                 for level in node_contour.keys()
                 if level in sibling_contour
                 and node_contour[level] - sibling_contour[level] < min_distance
+                and level > node.y
             ]
 
             if distances:
                 shift_value = min_distance - min(distances)
                 node.x += shift_value
                 node.mod += shift_value
-                self.center_nodes_between(sibling, node)
+                print(f"Node '{node.value}' shifting by {shift_value}. node.x={node.x}, mode.mod={node.mod}")
+                # self.center_nodes_between(sibling, node)
 
     def get_left_contour(self, node, mod_sum, values: dict[int, float]):
         # for each subtree level from node.y down, find the leftmost (minimum) x value required for tree
@@ -150,6 +168,7 @@ class ReingoldTilford:
         assert left_node.x < right_node.x
 
         number_of_nodes_between = right_node.index_in_parent - left_node.index_in_parent - 1
+        print(f"Re-centering {number_of_nodes_between} nodes between '{left_node.value}' and '{right_node.value}'")
         distance_between_nodes = (right_node.x - left_node.x) / (number_of_nodes_between + 1)
         nodes_between = left_node.parent.children[left_node.index_in_parent + 1: right_node.index_in_parent]
         for count, middle_node in enumerate(nodes_between, start=1):
@@ -158,21 +177,38 @@ class ReingoldTilford:
             middle_node.x += offset
             middle_node.mod += offset
 
-        # self.check_for_conflicts(left_node)
-
     def check_all_children_on_screen(self, node):
         node_contour = {}
         self.get_left_contour(node, 0, node_contour)
         shift_amount = 0
-        for y in node_contour.values():
-            if y + shift_amount < 0:
-                shift_amount += -1 * y
+        for left_most_child_at_level in node_contour.values():
+            if left_most_child_at_level + shift_amount < 0:
+                shift_amount += -1 * left_most_child_at_level
 
         if shift_amount > 0:
             node.x += shift_amount
             node.mod += shift_amount
 
+    def shift_back_to_zero(self, root):
+        # def find_smallest_x(node):
+        #     if node.is_leaf():
+        #         return node.x
+        #     return min(node.x, min(find_smallest_x(child) for child in node.children))
+
+        # left_most_child_at_any_level = find_smallest_x(root)
+
+        node_contour = {}
+        self.get_left_contour(root, 0, node_contour)
+        left_most_child_at_any_level = min(node_contour.values())
+        print("****************************", left_most_child_at_any_level)
+        shift_amount = -1 * left_most_child_at_any_level
+        root.x += shift_amount
+        root.mod += shift_amount
+
+
+
     def calculate_final_positions(self, node: Node, mod_sum):
         node.x += mod_sum
+        print(f"Final. Node '{node.value}':{node.x}   ({mod_sum})")
         for child in node.children:
             self.calculate_final_positions(child, mod_sum + node.mod)

@@ -172,7 +172,7 @@ export async function searchPeople(searchBy, maxResults) {
     const resData = await response.json();
   
     if (!response.ok) {
-      throw new Error('Failed to fetch places');
+      throw new Error('Failed to fetch');
     }
   
     return resData.people;
@@ -289,4 +289,83 @@ export async function removeLink(personId, linkId) {
     if (!response.ok) {
       throw new Error('Failed to fetch places');
     }
+}
+
+
+export async function getTasks(projectId) {
+    const response = await fetch(`${serverLocation}/api/projects/${projectId}/tasks`);
+    const resData = await response.json();
+  
+    if (!response.ok) {
+      throw new Error('Failed to fetch places');
+    }
+  
+    return resData.tasks;
+}
+
+export async function createNewTask(projectId, task)
+{
+
+    const response = await fetch(`${serverLocation}/api/projects/${projectId}/tasks`, {
+        method: 'POST',
+        body: JSON.stringify(task),
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+    const resData = await response.json();
+  
+    if (!response.ok) {
+      throw new Error('Failed to fetch places');
+    }
+
+    return resData.taskId;
+}
+
+export async function deleteTask(projectId, taskId) 
+{
+    const response = await fetch(`${serverLocation}/api/projects/${projectId}/tasks/${taskId}`, {
+        method: 'DELETE'
+    });
+
+    const resData = await response.json();
+  
+    if (!response.ok) {
+      throw new Error('Failed to fetch places');
+    }
+}
+
+
+export async function updateTask(projectId, taskId, update) {
+    const response = await fetch(`${serverLocation}/api/projects/${projectId}/tasks/${taskId}`, {
+        method: 'PUT',
+        body: JSON.stringify(update),
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+
+    const resData = await response.json();
+  
+    if (!response.ok) {
+      throw new Error('Failed to fetch places');
+    }
+
+}
+
+
+export async function getTree({root="65d764b07b2ae549be7a6888",
+                              nodeWidth=100,
+                              nodeHeight=50,
+                              siblingDistance=10,
+                              subtreeDistance=100,
+                              generationDistance=50}) {
+    const response = await fetch(`${serverLocation}/api/trees?root=${root}&nodeWidth=${nodeWidth}&nodeHeight=${nodeHeight}&siblingDistance=${siblingDistance}&subtreeDistance=${subtreeDistance}&generationDistance=${generationDistance}`);
+    const resData = await response.json();
+  
+    if (!response.ok) {
+      throw new Error('Failed to fetch places');
+    }
+  
+    return resData.people;
 }

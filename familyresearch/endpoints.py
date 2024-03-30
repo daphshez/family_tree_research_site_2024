@@ -13,6 +13,8 @@ from familyresearch.models import (Person, AdvancedDate, ResearchProject, Resear
 import re
 import shortuuid
 
+from familyresearch.reingold_tilford import Node, ReingoldTilford
+
 endpoints = Blueprint('endpoints', __name__)
 
 
@@ -174,9 +176,14 @@ def render_advanced_date(advanced_date: AdvancedDate):
 
 
 def render_a_person_for_list(person: Person):
+    name_parts = person.display_name.split(' ')
     return deep_remove_empty_values({
         'personId': str(person.id),
         'personDisplayName': person.display_name,
+        'name': {
+            'first': name_parts[0],
+            'last': name_parts[-1]
+        },
         'birth': {
             'date': render_advanced_date(person.birth_date)
         },
@@ -497,3 +504,58 @@ def update_task(project_id, task_id):
 def delete_task(project_id, task_id):
     ResearchTask.objects(id=task_id).delete()
     return {}
+
+
+@endpoints.get('/trees')
+def get_tree():
+    # tree_type = 'pure-descendants'
+    root = request.args['root']
+    node_width = int(request.args['nodeWidth'])
+    node_height = int(request.args['nodeHeight'])
+    sibling_distance = int(request.args['siblingDistance'])
+    subtree_distance = int(request.args['subtreeDistance'])
+    generation_distance = int(request.args['generationDistance'])
+
+    parent_to_children = get_all_pure_descendant_ids(root)  # maps parent id to a list of children id
+
+    all_people_ids = [child
+                      for children in parent_to_children.values()
+                      for child in children] + [root]
+    all_people = {str(person.id): person for person in Person.objects(id__in=all_people_ids)}
+
+    tree_nodes = {root: Node(all_people[root].display_name)}  # maps a person id to the person's node
+
+    def recursive_add_children_to_tree(person_id):
+        for child_id in parent_to_children[person_id]:
+            tree_nodes[child_id] = Node(value=all_people[child_id].display_name, parent=tree_nodes[person_id])
+            recursive_add_children_to_tree(child_id)
+
+    recursive_add_children_to_tree(root)
+
+    rt = ReingoldTilford(node_size=node_width, sibling_distance=sibling_distance, tree_distance=subtree_distance)
+    rt.calculate_node_positions(tree_nodes[root])
+
+    output_people = []
+    for person in all_people.values():
+        output_person = render_a_person_for_list(person)
+        output_person['x'] = tree_nodes[str(person.id)].x
+        output_person['y'] = 20 + tree_nodes[str(person.id)].y * (node_height + generation_distance)
+        output_person['children'] = parent_to_children[str(person.id)]
+        output_people.append(output_person)
+
+    return {
+        'people': output_people
+    }
+
+
+def get_all_pure_descendant_ids(root: str) -> dict[str, list[str]]:
+    # returns a map from a person id, to the ids of all their children
+    descendants = defaultdict(list)
+    curr_gen_ids = [root]
+    while curr_gen_ids:
+        for relation in Relationship.objects(person2__in=curr_gen_ids, person2_role='parent'):
+            descendants[str(relation.person2.id)].append(str(relation.person1.id))
+        curr_gen_ids = [child
+                        for parent in curr_gen_ids
+                        for child in descendants[parent]]
+    return descendants

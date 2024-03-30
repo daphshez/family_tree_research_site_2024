@@ -46,3 +46,24 @@ def test():
     assert k.x == 5.5
     assert l.x == 6.5
 
+
+def test_right_child_has_many_more_children():
+    a = Node(value='A')
+    b = Node(value='B', parent=a)
+    c = Node(value='C', parent=a)
+    c_children = [Node(value=v, parent=c) for v in "DEFGH"]
+
+    ReingoldTilford(node_size=10, sibling_distance=2, tree_distance=4).calculate_node_positions(a)
+
+    assert a.y == 0
+    assert b.y == c.y == 1
+    assert [child.y == 2 for child in c_children]
+
+    assert c_children[0].x == 0
+    assert c_children[1].x == 12
+    assert c_children[2].x == 24
+    assert c_children[3].x == 36
+    assert c_children[4].x == 48
+    assert c.x == 24
+    assert b.x == 10
+    assert a.x == 17

@@ -10,6 +10,7 @@ import NotePage, { loader as noteLoader, action as noteAction} from './pages/Not
 import LoginPage from "./pages/Login.jsx";
 import { action as loginAction} from './components/LoginForm.jsx';
 import TasksPage, {loader as tasksLoader, action as tasksAction } from './pages/Tasks.jsx';  
+import TreePage, {loader as treeLoader} from './pages/Tree.jsx';
 
 import '@fontsource/roboto/300.css';
 import '@fontsource/roboto/400.css';
@@ -73,7 +74,11 @@ const router = createBrowserRouter([
     element: <LoginPage />,
     action: loginAction,
   },
-
+  {
+    path: 'tree',
+    element: <TreePage />,
+    loader: treeLoader,
+  },
 ]);
 
 

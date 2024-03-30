@@ -4,11 +4,12 @@ import MainNavigation from '../components/MainNavigation';
 
 import Container from '@mui/material/Container'
 import { getUser } from '../utils';
+import { listProjects, createNewProject } from "../backend";
 import LoginPage from './Login';
 import ScrollToTop from '../components/ScrollToTop';
 
 export default function RootLayout() {
-  const user = useLoaderData();
+  const {user, projects} = useLoaderData();
 
 
   function logout () {
@@ -21,12 +22,12 @@ export default function RootLayout() {
       <>
       <ScrollToTop />
       <Container>
-        <MainNavigation user={user} />
-        <main>
-          <Container sx={{marginTop: '20px'}}>
-          <Outlet />
-          </Container>
-        </main>
+          <MainNavigation user={user} projects={projects} />
+          <main>
+            <Container sx={{marginTop: '20px'}}>
+            <Outlet />
+            </Container>
+          </main>
       </Container>
       </>
     );
@@ -36,6 +37,8 @@ export default function RootLayout() {
 
 }
 
-export function loader() { 
-  return getUser();
+export async function loader() { 
+  const user = getUser();
+  const projects = await listProjects();
+  return {user, projects};
 }

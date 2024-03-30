@@ -4,8 +4,10 @@ import PersonDetails from '../components/PersonDetails';
 import RelatedPeople from '../components/RelatedPeople';
 import PersonProjects from '../components/PersonProjects';
 import PersonLinks from '../components/PersonLinks';
+import PersonTasks from '../components/PersonTasks';
 import { Box, Typography } from '@mui/material';
 import OverviewNote from '../components/OverviewNote';
+
 
 
 export default function PersonPage() {
@@ -20,6 +22,7 @@ export default function PersonPage() {
         <PersonDetails inputPerson={person}/>
         <PersonLinks person={person}/>
         <RelatedPeople person={person}/>
+        <PersonTasks person={person}/>
         <PersonProjects person={person}/>
 
         </Box>);
