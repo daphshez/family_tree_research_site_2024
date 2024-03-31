@@ -3,8 +3,7 @@
 # todo: contours output shouldn't include root
 #       contours can be built as part of the recursion rather than re-calculated every time
 #       test 2 now fails
-#     - support for spouses using variable node size
-#     - recentering intermediate nodes doesn't work if they have children ; currently disabled needs fixing
+#       recentering intermediate nodes doesn't work if they have children ; currently disabled needs fixing
 
 class Node:
     y: int = -1
@@ -70,7 +69,7 @@ class Node:
         return self.value
 
 
-class ReingoldTilford:
+class Lim2014:
     def __init__(self, node_size=1, sibling_distance=0, tree_distance=0):
         self.node_size = node_size
         self.sibling_distance = sibling_distance

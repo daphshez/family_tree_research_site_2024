@@ -13,7 +13,8 @@ from familyresearch.models import (Person, AdvancedDate, ResearchProject, Resear
 import re
 import shortuuid
 
-from familyresearch.reingold_tilford import Node, ReingoldTilford
+# from familyresearch.reingold_tilford import Node, ReingoldTilford
+from tree_layout.walker1991 import Node, Walker1991
 
 endpoints = Blueprint('endpoints', __name__)
 
@@ -506,6 +507,10 @@ def delete_task(project_id, task_id):
     return {}
 
 
+# todo: add spouses to tree
+#       add ancestors to tree
+#       support for minimum x and y
+
 @endpoints.get('/trees')
 def get_tree():
     # tree_type = 'pure-descendants'
@@ -523,23 +528,31 @@ def get_tree():
                       for child in children] + [root]
     all_people = {str(person.id): person for person in Person.objects(id__in=all_people_ids)}
 
-    tree_nodes = {root: Node(all_people[root].display_name)}  # maps a person id to the person's node
+    tree_nodes = {root: Node(value=all_people[root].display_name,
+                             width=node_width)}  # maps a person id to the person's node
 
     def recursive_add_children_to_tree(person_id):
         for child_id in parent_to_children[person_id]:
-            tree_nodes[child_id] = Node(value=all_people[child_id].display_name, parent=tree_nodes[person_id])
+            tree_nodes[child_id] = Node(value=all_people[child_id].display_name,
+                                        width=node_width,
+                                        parent=tree_nodes[person_id])
             recursive_add_children_to_tree(child_id)
 
     recursive_add_children_to_tree(root)
 
-    rt = ReingoldTilford(node_size=node_width, sibling_distance=sibling_distance, tree_distance=subtree_distance)
-    rt.calculate_node_positions(tree_nodes[root])
+
+    rt = Walker1991(sibling_separation=sibling_distance,
+                    subtree_separation=subtree_distance,
+                    level_separation=generation_distance,
+                    node_height=node_height)
+    rt.tree_position(tree_nodes[root])
 
     output_people = []
     for person in all_people.values():
         output_person = render_a_person_for_list(person)
         output_person['x'] = tree_nodes[str(person.id)].x
-        output_person['y'] = 20 + tree_nodes[str(person.id)].y * (node_height + generation_distance)
+        output_person['y'] = tree_nodes[str(person.id)].y
+        # output_person['y'] = 20 + tree_nodes[str(person.id)].level * (node_height + generation_distance)
         output_person['children'] = parent_to_children[str(person.id)]
         output_people.append(output_person)
 
