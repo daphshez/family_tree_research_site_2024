@@ -3,11 +3,13 @@ from collections import defaultdict
 from typing import Optional
 
 from bson import ObjectId
-from flask import Blueprint, request
+from flask import Blueprint, request, make_response
 from mongoengine import Q
 from werkzeug.exceptions import BadRequest
 
+from familyresearch import deep_remove_empty_values
 from familyresearch.family_relationships import add_other_parent, infer_siblings
+from familyresearch.gedcom import create_gedcom, prepare_for_create_gedcom
 from familyresearch.models import (Person, AdvancedDate, ResearchProject, ResearchNote, get_gender_value, Relationship,
                                    get_date_qualifier_value, PersonLink, role_choices, ResearchTask)
 import re
@@ -42,30 +44,15 @@ def find_people(note_content):
     return [ObjectId(person_id) for person_id in search_regexp.findall(note_content)]
 
 
-def deep_remove_empty_values(d: dict) -> dict:
-    def internal_for_lists(l: list) -> list:
-        result = []
-        for v in l:
-            if type(v) == dict:
-                v = internal_for_dicts(v)
-            if type(v) == list:
-                v = internal_for_lists(v)
-            if v is not None and v != [] and v != {}:
-                result.append(v)
-        return result
-
-    def internal_for_dicts(d: dict) -> dict:
-        result = {}
-        for k, v in d.items():
-            if type(v) == dict:
-                v = internal_for_dicts(v)
-            if type(v) == list:
-                v = internal_for_lists(v)
-            if v is not None and v != [] and v != {}:
-                result[k] = v
-        return result
-
-    return internal_for_dicts(d)
+def make_advanced_date_from_request(d):
+    if d:
+        advanced_date = AdvancedDate()
+        advanced_date.day = d.get('day')
+        advanced_date.month = d.get('month')
+        advanced_date.year = d.get('year')
+        if 'qualifier' in d:
+            advanced_date.qualifier = get_date_qualifier_value(d['qualifier'])
+        return advanced_date
 
 
 @endpoints.post('/login')
@@ -201,16 +188,22 @@ def render_people_for_list(query):
     return {'people': people}
 
 
+@endpoints.get('/projects/<project_id>/people')
+def list_people(project_id):
+    return render_people_for_list(Person.objects(projects=project_id))
+
+
 @endpoints.get('/people')
-def list_people():
+def list_all_people():
     return render_people_for_list(Person.objects())
 
 
 @endpoints.put('/people/create')
 def create_person():
     d = request.json
-    display_name = d['personDisplayName']
-    person = Person(display_name=display_name).save()
+    display_name = d['personDisplayName'].strip()
+    project_id = ObjectId(d['projectId'])
+    person = Person(display_name=display_name, projects=[project_id]).save()
     return {
         'personId': str(person.id),
         'personDisplayName': display_name
@@ -318,7 +311,6 @@ def get_person(person_id):
         'overviewNote': person.overview_note,
         'tasks': tasks
     })
-    print(p)
     return p
 
 
@@ -331,12 +323,12 @@ def update_person(person_id):
     if 'personDisplayNameNote' in d:
         update['set__display_name_note'] = d['personDisplayNameNote']
     if 'birth' in d:
-        if 'date' in d['birth']:
-            update['set__birth_date__day'] = d['birth']['date'].get('day')
-            update['set__birth_date__month'] = d['birth']['date'].get('month')
-            update['set__birth_date__year'] = d['birth']['date'].get('year')
-            if 'qualifier' in d['birth']['date']:
-                update['set__birth_date__qualifier'] = get_date_qualifier_value(d['birth']['date']['qualifier'])
+        birth_date = make_advanced_date_from_request(d['birth'].get('date'))
+        if birth_date:
+            update['set__birth_date__day'] = birth_date.day
+            update['set__birth_date__month'] = birth_date.month
+            update['set__birth_date__year'] = birth_date.year
+            update['set__birth_date__qualifier'] = birth_date.qualifier
         if 'dateNote' in d['birth']:
             update['set__birth_date__note'] = d['birth']['dateNote']
         if 'place' in d['birth']:
@@ -346,12 +338,12 @@ def update_person(person_id):
     if 'isAlive' in d:
         update['set__is_alive'] = parse_is_alive(d['isAlive'])
     if 'death' in d:
-        if 'date' in d['death']:
-            update['set__death_date__day'] = d['death']['date'].get('day')
-            update['set__death_date__month'] = d['death']['date'].get('month')
-            update['set__death_date__year'] = d['death']['date'].get('year')
-            if 'qualifier' in d['death']['date']:
-                update['set__death_date__qualifier'] = get_date_qualifier_value(d['death']['date']['qualifier'])
+        death_date = make_advanced_date_from_request(d['death'].get('date'))
+        if death_date:
+            update['set__death_date__day'] = death_date.day
+            update['set__death_date__month'] = death_date.month
+            update['set__death_date__year'] = death_date.year
+            update['set__death_date__qualifier'] = death_date.qualifier
             if 'dateNote' in d['death']:
                 update['set__death_date__note'] = d['death']['dateNote']
         if 'place' in d['death']:
@@ -389,7 +381,9 @@ def add_relationship():
     Relationship(person1=person1,
                  person2=person2,
                  person2_role=role,
-                 relationship_option=options).save()
+                 relationship_option=options,
+                 since=make_advanced_date_from_request(d.get('since')),
+                 until=make_advanced_date_from_request(d.get('until'))).save()
 
     if role == 'parent':
         add_other_parent(person2, person1, options)
@@ -510,6 +504,8 @@ def delete_task(project_id, task_id):
 # todo: add spouses to tree
 #       add ancestors to tree
 #       support for minimum x and y
+#       sort children by dob
+
 
 @endpoints.get('/trees')
 def get_tree():
@@ -539,7 +535,6 @@ def get_tree():
             recursive_add_children_to_tree(child_id)
 
     recursive_add_children_to_tree(root)
-
 
     rt = Walker1991(sibling_separation=sibling_distance,
                     subtree_separation=subtree_distance,
@@ -572,3 +567,19 @@ def get_all_pure_descendant_ids(root: str) -> dict[str, list[str]]:
                         for parent in curr_gen_ids
                         for child in descendants[parent]]
     return descendants
+
+
+# @endpoints.get('/bla')
+# def add_default_project():
+#     Person.objects.update(projects=[ObjectId('65d75a669517f621ea73eda4')])
+#     return {}
+
+
+@endpoints.get('/projects/<project_id>/gedcom')
+def get_gedcom(project_id):
+    p = ResearchProject.objects(id=project_id).get()
+
+    r = make_response(create_gedcom(prepare_for_create_gedcom(project_id)))
+    r.headers['Content-Type'] = 'text/plain;charset=UTF-8'
+    r.headers['Content-Disposition'] = f'attachment;filename={p.name}.ged'
+    return r

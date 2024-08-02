@@ -1,4 +1,4 @@
-import { nicerDate, saveUser } from "./utils";
+import { getCurrentProjectId, nicerDate, saveUser } from "./utils";
 
 const serverLocation = 'http://localhost:5000'
 
@@ -150,8 +150,13 @@ export async function updateNote(projectId, noteId, content, sticky) {
 }
 
 
-export async function listPeople() {
-    const response = await fetch(`${serverLocation}/api/people`);
+export async function listPeople(projectId) {
+    let response = null;
+    if (projectId) {
+        response = await fetch(`${serverLocation}/api/projects/${projectId}/people`);
+    } else {
+        response = await fetch(`${serverLocation}/api/people`);
+    }
     const resData = await response.json();
   
     if (!response.ok) {
@@ -181,7 +186,7 @@ export async function searchPeople(searchBy, maxResults) {
 export async function createNewPerson(name) {
     const response = await fetch(`${serverLocation}/api/people/create`, {
         method: 'PUT',
-        body: JSON.stringify({ personDisplayName: name }),
+        body: JSON.stringify({ personDisplayName: name, projectId: getCurrentProjectId() }),
         headers: {
             'Content-Type': 'application/json',
         },

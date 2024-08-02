@@ -1,4 +1,4 @@
-import { createBrowserRouter, RouterProvider} from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, redirect} from 'react-router-dom';
 
 
 import PeoplePage, { loader as peopleLoader, action as addPersonAction } from './pages/People.jsx';
@@ -11,6 +11,9 @@ import LoginPage from "./pages/Login.jsx";
 import { action as loginAction} from './components/LoginForm.jsx';
 import TasksPage, {loader as tasksLoader, action as tasksAction } from './pages/Tasks.jsx';  
 import TreePage, {loader as treeLoader} from './pages/Tree.jsx';
+
+import { getCurrentProjectId } from './utils.js';
+
 
 import '@fontsource/roboto/300.css';
 import '@fontsource/roboto/400.css';
@@ -26,8 +29,15 @@ const router = createBrowserRouter([
     id: "root",
     // errorElement: <ErrorPage />,
     children: [
+      {
+        index: true,
+        loader: () => {
+          const projectId = getCurrentProjectId();
+          return redirect(`/projects/${projectId}`);
+        }
+      },
       { 
-        index: true, 
+        path: '/projects/:projectId/people', 
         element: <PeoplePage /> ,
         loader: peopleLoader,
         action: addPersonAction,

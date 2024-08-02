@@ -7,6 +7,30 @@ from werkzeug.exceptions import NotFound
 
 db = MongoEngine()
 
+def deep_remove_empty_values(d: dict) -> dict:
+    def internal_for_lists(l: list) -> list:
+        result = []
+        for v in l:
+            if type(v) == dict:
+                v = internal_for_dicts(v)
+            if type(v) == list:
+                v = internal_for_lists(v)
+            if v is not None and v != [] and v != {}:
+                result.append(v)
+        return result
+
+    def internal_for_dicts(d: dict) -> dict:
+        result = {}
+        for k, v in d.items():
+            if type(v) == dict:
+                v = internal_for_dicts(v)
+            if type(v) == list:
+                v = internal_for_lists(v)
+            if v is not None and v != [] and v != {}:
+                result[k] = v
+        return result
+
+    return internal_for_dicts(d)
 
 def create_app(config=None):
     app = Flask(__name__)
@@ -27,7 +51,8 @@ def create_app(config=None):
     @app.route('/', defaults={'path': ''})
     @app.route('/<path:path>')
     def catch_all(path):
-        if path.startswith('/api'):
+        print(path)
+        if path.startswith('api'):
             raise NotFound()
         return app.send_static_file("index.html")
 

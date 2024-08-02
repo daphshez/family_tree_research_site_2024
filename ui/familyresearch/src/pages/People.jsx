@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { listPeople } from "../backend"
+import { listPeople } from "../backend";
+import { getCurrentProjectId} from "../utils";
 import { Link, redirect } from 'react-router-dom';
 import { useLoaderData } from 'react-router-dom';
 import { createNewPerson, fullDisplayName } from "../backend";
@@ -27,6 +28,9 @@ export default function PeoplePage() {
 
     return (
     <>
+     <Fab color="primary" aria-label="add" onClick={() => setNewPersonFormOpen(true)}>
+        <AddIcon />
+      </Fab>
     <List>
         {people.map( (person) => (
                 <ListItem disablePadding key={person.personId}>
@@ -35,17 +39,17 @@ export default function PeoplePage() {
                    
             ) )}
     </List> 
-    <Fab color="primary" aria-label="add" onClick={() => setNewPersonFormOpen(true)}>
-        <AddIcon />
-      </Fab>
+   
     <NewPersonForm open={isNewPersonFormOpen} handleClose={() => setNewPersonFormOpen(false)}/> 
     </>);
 
 }
 
-export function loader() {
-   return listPeople();
-}
+
+export function loader({ request, params }) {
+    const projectId = params.projectId;
+    return listPeople(projectId);
+ }
 
 export async function action({ request, params }) {
         const formData = await request.formData();

@@ -76,11 +76,11 @@ class Person(db.Document):
 
     gender = db.IntField(choices=gender_choices)
 
-    related_people = db.ListField() # todo: this needs to be removed from all documents
-
     links = db.EmbeddedDocumentListField(PersonLink)
 
     overview_note = db.StringField()
+
+    projects = db.ListField(db.LazyReferenceField(ResearchProject))
 
 
 class Relationship(db.Document):
@@ -89,6 +89,8 @@ class Relationship(db.Document):
     person2_role = db.StringField(choice=role_choices)
     relationship_option = db.StringField()
     created = db.DateTimeField(default=datetime.datetime.utcnow)
+    since = db.EmbeddedDocumentField(AdvancedDate)  # think of these as marriage and divorce date
+    until = db.EmbeddedDocumentField(AdvancedDate)
 
 
 class ResearchNote(db.Document):
