@@ -58,10 +58,8 @@ export function removeUser() {
 
 export function getCurrentProjectId() {
   const project = JSON.parse( localStorage.getItem('project'));
-  if (!project) {
-    return {
-      projectId: null
-    };
+  if (project == null) {
+    return "";
   }
   return project.projectId;
 }
